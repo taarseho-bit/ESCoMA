@@ -1,0 +1,120 @@
+{
+  "schema_version": "2.0.0",
+  "retrieval_date": "2026-08-13",
+  "panel_species": 135,
+  "qc_counts": {
+    "PASS": 79,
+    "FAIL": 41,
+    "NOT_FOUND": 15,
+    "ERROR": 0
+  },
+  "combined_fasta_records": 79,
+  "clade_counts": {
+    "Mammalia": {
+      "panel": 50,
+      "pass": 37
+    },
+    "Aves": {
+      "panel": 10,
+      "pass": 6
+    },
+    "Reptilia": {
+      "panel": 8,
+      "pass": 4
+    },
+    "Amphibia": {
+      "panel": 5,
+      "pass": 3
+    },
+    "Actinopterygii": {
+      "panel": 9,
+      "pass": 8
+    },
+    "Chondrichthyes": {
+      "panel": 1,
+      "pass": 1
+    },
+    "Sarcopterygii": {
+      "panel": 1,
+      "pass": 1
+    },
+    "Cyclostomata": {
+      "panel": 1,
+      "pass": 1
+    },
+    "Tunicata": {
+      "panel": 1,
+      "pass": 1
+    },
+    "Cephalochordata": {
+      "panel": 1,
+      "pass": 1
+    },
+    "Echinodermata": {
+      "panel": 2,
+      "pass": 1
+    },
+    "Arthropoda": {
+      "panel": 7,
+      "pass": 6
+    },
+    "Nematoda": {
+      "panel": 2,
+      "pass": 0
+    },
+    "Mollusca": {
+      "panel": 3,
+      "pass": 0
+    },
+    "Annelida": {
+      "panel": 1,
+      "pass": 0
+    },
+    "Platyhelminthes": {
+      "panel": 1,
+      "pass": 0
+    },
+    "Cnidaria": {
+      "panel": 2,
+      "pass": 2
+    },
+    "Fungi": {
+      "panel": 10,
+      "pass": 3
+    },
+    "Viridiplantae": {
+      "panel": 10,
+      "pass": 1
+    },
+    "Amoebozoa": {
+      "panel": 1,
+      "pass": 0
+    },
+    "Alveolata": {
+      "panel": 3,
+      "pass": 2
+    },
+    "Discoba": {
+      "panel": 3,
+      "pass": 0
+    },
+    "Metamonada": {
+      "panel": 1,
+      "pass": 0
+    },
+    "Haptista": {
+      "panel": 1,
+      "pass": 0
+    },
+    "Stramenopiles": {
+      "panel": 1,
+      "pass": 1
+    }
+  },
+  "source_databases": [
+    "NCBI Nucleotide"
+  ],
+  "homology_calls_completed": 0,
+  "validated_msa_count": 0,
+  "warning": "PASS denotes a high-quality nuclear LSU record, not an ES homology call. ES scoring requires separate localization and MSA QC."
+}

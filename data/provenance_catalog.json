@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0.0",
+  "updated_at": "2026-08-13",
+  "counting_warning": "数据库之间存在来源重叠，记录数不可相加为唯一生物序列总数。",
+  "databases": [
+    {
+      "source_id": "ROD_v1_2", "name": "Ribosomal Operon Database", "version": "v1.2 GoldenRod", "records": 69480,
+      "scope": "完整真核 18S-ITS1-5.8S-ITS2-28S operon；11,935 个基因组",
+      "status": "本地全量已验证", "status_class": "verified", "official_url": "https://github.com/krabberod/ROD",
+      "links": [
+        {"label": "原始 FASTA", "url": "https://raw.githubusercontent.com/krabberod/ROD/main/ROD_v1.2_operon_variants.fasta.gz"},
+        {"label": "Zenodo 数据集", "url": "https://doi.org/10.5281/zenodo.12558683"},
+        {"label": "原始论文", "url": "https://doi.org/10.1111/1755-0998.14031"}
+      ],
+      "provenance": "69,480 条 FASTA 与 11,935 条参考子集记录数已核验；保留 assembly、taxid、原始 contig 坐标和 SHA-256。",
+      "use": "同一 operon 的 5.8S/28S 配对；ES3L 和 ES4L 的首选补充原料。"
+    },
+    {
+      "source_id": "SILVA_LSU_Ref_NR99_138_2", "name": "SILVA LSU Ref NR99", "version": "138.2", "records": 95279,
+      "scope": "≥1,900 nt 的 23S/28S 高质量非冗余参考序列",
+      "status": "本地全量已验证", "status_class": "verified", "official_url": "https://www.arb-silva.de/arb-files/",
+      "links": [
+        {"label": "原始 FASTA", "url": "https://www.arb-silva.de/fileadmin/silva_databases/release_138_2/Exports/SILVA_138.2_LSURef_NR99_tax_silva.fasta.gz"},
+        {"label": "数据集 DOI", "url": "https://doi.org/10.82364/138.2/LSU/Ref-NR99/FASTA/unaligned"}
+      ],
+      "provenance": "官方 MD5 83c51bd6cbcc23125a9a8d459109fa58 已验证；本地 SHA-256 已登记。",
+      "use": "扩展深分支物种、建立系统发育背景并交叉验证 NCBI 序列。"
+    },
+    {
+      "source_id": "Rfam_RF02543", "name": "Rfam LSU_rRNA_eukarya", "version": "15.1 / RF02543", "records": 107553,
+      "scope": "真核细胞质 LSU rRNA 协方差模型家族；2,616 个页面报告物种",
+      "status": "本地全量已验证", "status_class": "verified", "official_url": "https://rfam.org/family/RF02543",
+      "links": [
+        {"label": "原始 FASTA", "url": "https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/RF02543.fa.gz"},
+        {"label": "协方差模型", "url": "https://rfam.org/family/RF02543/cm"},
+        {"label": "CC0 许可", "url": "https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/COPYING"}
+      ],
+      "provenance": "FASTA、CM、88 条 Seed、146,122 条候选区域及 SHA-256 均已登记。",
+      "use": "结构感知的 LSU 同源定位与深分支序列 QC。"
+    },
+    {
+      "source_id": "Rfam_RF00002", "name": "Rfam 5.8S rRNA", "version": "15.1 / RF00002", "records": 16562,
+      "scope": "真核与古菌 5.8S rRNA；1,591 个页面报告物种",
+      "status": "本地全量已验证", "status_class": "verified", "official_url": "https://rfam.org/family/RF00002",
+      "links": [
+        {"label": "原始 FASTA", "url": "https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/RF00002.fa.gz"},
+        {"label": "协方差模型", "url": "https://rfam.org/family/RF00002/cm"},
+        {"label": "Seed 比对", "url": "https://rfam.org/family/RF00002/alignment?gzip=1"}
+      ],
+      "provenance": "16,562 条 FASTA、61 条 Seed、47,585 条候选区域、SHA-256 已验证。",
+      "use": "ES3L 及 5.8S-28S 复合边界 ES4L 的同源定位原料；尚不代表 ES 边界已完成。"
+    },
+    {
+      "source_id": "NCBI_Nucleotide", "name": "NCBI Nucleotide / RefSeq", "version": "2026-08-13 工作快照", "records": 135,
+      "scope": "135 个物种工作面板；79 条核 LSU 通过序列 QC",
+      "status": "工作集已抓取", "status_class": "verified", "official_url": "https://www.ncbi.nlm.nih.gov/nuccore/",
+      "links": [
+        {"label": "人 28S NR_003287.4", "url": "https://www.ncbi.nlm.nih.gov/nuccore/NR_003287.4"},
+        {"label": "NCBI Taxonomy", "url": "https://www.ncbi.nlm.nih.gov/taxonomy"},
+        {"label": "E-utilities", "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"}
+      ],
+      "provenance": "每条记录保留 accession.version、TaxID、GenBank、FASTA、检索查询、拒绝原因和 MD5。",
+      "use": "当前 37 个哺乳动物、20 个 28S ES 的逐条来源；矩阵格可直接打开对应 accession。"
+    },
+    {
+      "source_id": "RNAcentral", "name": "RNAcentral", "version": "current release", "records": null,
+      "scope": "带稳定 URS 的整合 ncRNA 序列与专家库交叉引用",
+      "status": "已登记·定向提取", "status_class": "registered", "official_url": "https://rnacentral.org/",
+      "links": [
+        {"label": "FTP 文件说明", "url": "https://rnacentral.org/help/ftp"},
+        {"label": "API", "url": "https://rnacentral.org/api"},
+        {"label": "当前发布目录", "url": "https://ftp.ebi.ac.uk/pub/databases/RNAcentral/current_release/"}
+      ],
+      "provenance": "通过 URS、taxid、MD5 和专家库 accession 追踪；大文件与 Rfam/SILVA/RefSeq 高度重叠。",
+      "use": "按物种与 rRNA 类型定向补缺，不下载后直接当作新增唯一序列。"
+    },
+    {
+      "source_id": "EUKARYOME_LSU_v2_0", "name": "EUKARYOME LSU", "version": "v2.0", "records": 377679,
+      "scope": "社区整理的真核核 LSU marker；目标面板命中 78/135 个物种、646 条候选",
+      "status": "本地全量已验证", "status_class": "verified", "official_url": "https://eukaryome.org/generalfasta/",
+      "links": [
+        {"label": "官方下载页", "url": "https://eukaryome.org/generalfasta/"},
+        {"label": "原始论文", "url": "https://doi.org/10.1093/database/baae043"},
+        {"label": "许可说明", "url": "https://creativecommons.org/licenses/by/4.0/"}
+      ],
+      "provenance": "377,679 条记录已逐条计数；ZIP 与 FASTA SHA-256 已登记。入选 175 条物种候选，仍未进入 ES 定位通过层。",
+      "use": "补充 NCBI 工作集缺失类群并交叉核对 LSU；不能与其他库相加为唯一序列数。"
+    },
+    {
+      "source_id": "EUKARYOME_LONG_v2_0", "name": "EUKARYOME 长读长", "version": "v2.0", "records": 193705,
+      "scope": "SSU-ITS-LSU 同一记录；目标面板命中 62/135 个物种、447 条候选",
+      "status": "本地全量已验证", "status_class": "verified", "official_url": "https://eukaryome.org/generalfasta/",
+      "links": [
+        {"label": "官方下载页", "url": "https://eukaryome.org/generalfasta/"},
+        {"label": "原始论文", "url": "https://doi.org/10.1093/database/baae043"}
+      ],
+      "provenance": "193,705 条记录已逐条计数；ZIP 与 FASTA SHA-256 已登记。入选 135 条物种候选；两集合合计 310 条入选记录中仅 224 个唯一 MD5。",
+      "use": "优先用于同一记录的 5.8S/28S 配对和 ES3L/ES4L 候选发现；仍需分段、定位、MSA 与 QC。"
+    },
+    {
+      "source_id": "CRW", "name": "Comparative RNA Web Site", "version": "current", "records": null,
+      "scope": "rRNA 序列比对、二级结构图与 BPSEQ",
+      "status": "结构证据已登记", "status_class": "evidence", "official_url": "https://crw-site.chemistry.gatech.edu/",
+      "links": [
+        {"label": "批量数据入口", "url": "https://crw-site.chemistry.gatech.edu/DAT/3C/"},
+        {"label": "结构/BPSEQ", "url": "https://crw-site.chemistry.gatech.edu/DAT/3C/SBPI/index.php"}
+      ],
+      "provenance": "结构图和比对均保留物种、RNA 分子和文件格式来源。",
+      "use": "核对 ES 宿主螺旋和结构对应关系；不独立形成序列同源判定。"
+    }
+  ],
+  "literature": [
+    {
+      "evidence_id": "Anger2013", "year": 2013, "title": "Structures of the human and Drosophila 80S ribosome", "citation": "Anger AM et al. Nature 497:80-85.",
+      "es_scope": "LSU ES 命名与宿主螺旋", "taxon_scope": "Homo sapiens；Drosophila melanogaster", "data_type": "结构坐标、补充表与 ES 命名", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.1038/nature12104"},{"label":"PubMed 23636399","url":"https://pubmed.ncbi.nlm.nih.gov/23636399/"}],
+      "use": "人源坐标交叉表和结构命名。", "limitations": "物种特异边界必须声明参考坐标轴。"
+    },
+    {
+      "evidence_id": "Parker2018", "year": 2018, "title": "The Expansion Segments of 28S Ribosomal RNA Extensively Match Human Messenger RNAs", "citation": "Parker MS et al. Front Genet 9:66.",
+      "es_scope": "15 个人 LSU ES", "taxon_scope": "人；比较真核生物", "data_type": "线性边界、长度、GC 与比较大小", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.3389/fgene.2018.00066"},{"label":"PMC 全文","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC5847090/"}],
+      "use": "插入代理边界约定与比较背景。", "limitations": "不能覆盖结构宿主螺旋边界。"
+    },
+    {
+      "evidence_id": "Petrov2022_ES7", "year": 2022, "title": "rRNA expansion segment 7 in eukaryotes: from Signature Fold to tentacles", "citation": "Petrov AS et al. Nucleic Acids Res.",
+      "es_scope": "ES7L", "taxon_scope": "广泛真核类群", "data_type": "比较二级/三级结构、MSA 与进化模型", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.1093/nar/gkac770"},{"label":"PMC 全文","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC9561286/"}],
+      "use": "ES7L 跨物种结构数据的优先来源。", "limitations": "结构保守性可能高于一级序列保守性。"
+    },
+    {
+      "evidence_id": "Jomaa2022_Dictyostelium", "year": 2022, "title": "Structures of the eukaryotic ribosome and its translational states in situ", "citation": "Jomaa A et al. Nature Communications.",
+      "es_scope": "ES7L、ES27L 等多个人 LSU ES", "taxon_scope": "Dictyostelium discoideum；比较真核生物", "data_type": "原位 cryo-ET、rRNA 2D 图与结构提取", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.1038/s41467-022-34997-w"},{"label":"PMC 全文","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC9718845/"}],
+      "use": "阿米巴 ES 结构与跨真核比较。", "limitations": "未解析区的建模结果仍需序列验证。"
+    },
+    {
+      "evidence_id": "Gluc2024_Spombe", "year": 2024, "title": "Ribosomes hibernate on mitochondria during cellular stress", "citation": "Gluc M et al. Nature Communications 15.",
+      "es_scope": "ES7a、H69", "taxon_scope": "Schizosaccharomyces pombe", "data_type": "1.9-2.4 Å cryo-EM 与 rRNA 模型校正", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.1038/s41467-024-52911-4"},{"label":"PMC 全文","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC11461667/"},{"label":"PDB 9AXV","url":"https://www.rcsb.org/structure/9AXV"}],
+      "use": "裂殖酵母 ES7a 结构与序列注释证据。", "limitations": "单物种结构，不是跨物种保守性得分。"
+    },
+    {
+      "evidence_id": "Sharma2025_Entamoeba", "year": 2025, "title": "Cryo-EM structure of ribosome from pathogenic protozoa Entamoeba histolytica reveals unique features", "citation": "Sharma S et al. Nature Communications 16:7758.",
+      "es_scope": "多个 LSU ES、ES27、H88ES102", "taxon_scope": "Entamoeba histolytica；人与其比较", "data_type": "2.8-3.4 Å cryo-EM、结构坐标与补充域坐标", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.1038/s41467-025-62767-x"},{"label":"PMC 全文","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC12368212/"},{"label":"PDB 9V1I","url":"https://www.rcsb.org/structure/9V1I"}],
+      "use": "原生生物 ES 缺失、缩短和新生结构的边界复核。", "limitations": "结构缺失或无密度不能单独判定基因组缺失。"
+    },
+    {
+      "evidence_id": "ROD2024", "year": 2024, "title": "The Ribosomal Operon Database: A Full-Length rDNA Operon Database Derived From Genome Assemblies", "citation": "Krabberød AK et al. Molecular Ecology Resources 25:e14031.",
+      "es_scope": "完整 5.8S 与 28S 原料", "taxon_scope": "11,935 个真核基因组", "data_type": "69,480 条完整 rDNA operon 变体", "extractability": "HIGH",
+      "links": [{"label":"DOI 原文","url":"https://doi.org/10.1111/1755-0998.14031"},{"label":"PMC 全文","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC11646303/"},{"label":"Zenodo 数据","url":"https://doi.org/10.5281/zenodo.12558683"}],
+      "use": "同一 operon 的 ES3L/ES4L 序列定位。", "limitations": "基因组组装错误和 rDNA 拷贝变异需要独立 QC。"
+    },
+    {
+      "evidence_id": "Rothschild2025_Preprint", "year": 2025, "title": "Ribosome heterogeneity arising from common and rare rRNA sequence variants affects diverse human phenotypes", "citation": "Rothschild D et al. medRxiv preprint.",
+      "es_scope": "人 ES15L、ES27L、ES39L", "taxon_scope": "Homo sapiens", "data_type": "UK Biobank rRNA 变异关联", "extractability": "MEDIUM",
+      "links": [{"label":"预印本原文","url":"https://doi.org/10.1101/2025.09.02.25334953"}],
+      "use": "人源候选区的变异风险证据层。", "limitations": "预印本；不能作为跨物种同源数据。"
+    }
+  ]
+}

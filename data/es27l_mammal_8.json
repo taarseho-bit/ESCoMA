@@ -1,0 +1,256 @@
+{
+  "schema_version": "1.0.0",
+  "name": "ES27L",
+  "label": "ES27L · v1.2 · 8种同源判定 / 7种参与评分",
+  "release": "Human ES Reference v1.2",
+  "data_scope": "validated_mammal_es27l_msa",
+  "simulated": false,
+  "analysis_ready": true,
+  "human_coordinate_offset": 2906,
+  "human_reference": "NR_003287.4",
+  "boundary_basis": "host_helix_full_extended_nomenclature",
+  "alignment": {
+    "schema_version": "1.0.0",
+    "es_id": "ES27L",
+    "release": "Human ES Reference v1.2",
+    "boundary_basis": "host_helix_full_extended_nomenclature",
+    "alignment_software": "MAFFT 7.526",
+    "alignment_strategy": "G-INS-i whole-LSU global MSA",
+    "alignment_parameters": "--globalpair --maxiterate 1000 --thread -1",
+    "whole_lsu_alignment_length": 5567,
+    "extracted_alignment_start_column_1based": 3129,
+    "extracted_alignment_end_column_1based": 4053,
+    "es_alignment_length": 925,
+    "human_es_length_ungapped": 722,
+    "human_es_md5": "660f3679715cb2da7799afadbe2e0802",
+    "species_count": 8,
+    "species_pass": 7,
+    "all_sequences_equal_length": true,
+    "human_reference_exact_match": true,
+    "human_es_exact_match": true,
+    "scoring_scope": "7 mammals passing ES27L localization QC; all 8 calls retained for audit",
+    "low_entropy_definition": "1 - Shannon entropy / ln(4), calculated per MSA column from A/C/G/U observations",
+    "conservation_definition": "mean pairwise identity among comparable bases multiplied by pair-site coverage",
+    "excluded_from_scoring": [
+      {
+        "species": "Bos taurus",
+        "reason": "FAIL_LOCALIZATION"
+      }
+    ],
+    "warning": "This mammal MSA supports within-mammal ES27L window ranking only; failed localization is not absence, and the analysis does not establish ES birth in distant taxa."
+  },
+  "homology_calls": [
+    {
+      "species": "Homo sapiens",
+      "taxid": 9606,
+      "accession": "NR_003287.4",
+      "note": "human_v1.2_axis",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 722,
+      "mapped_human_bases": 722,
+      "mapped_human_coverage": 1,
+      "identity_to_human": 1,
+      "gap_fraction": 0.219459,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    },
+    {
+      "species": "Pan troglodytes",
+      "taxid": 9598,
+      "accession": "XR_008545338.2",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 719,
+      "mapped_human_bases": 710,
+      "mapped_human_coverage": 0.98338,
+      "identity_to_human": 0.943662,
+      "gap_fraction": 0.222703,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    },
+    {
+      "species": "Macaca mulatta",
+      "taxid": 9544,
+      "accession": "XR_003725683.2",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 588,
+      "mapped_human_bases": 585,
+      "mapped_human_coverage": 0.810249,
+      "identity_to_human": 0.842735,
+      "gap_fraction": 0.364324,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    },
+    {
+      "species": "Mus musculus",
+      "taxid": 10090,
+      "accession": "NR_003279.1",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 625,
+      "mapped_human_bases": 570,
+      "mapped_human_coverage": 0.789474,
+      "identity_to_human": 0.770175,
+      "gap_fraction": 0.324324,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    },
+    {
+      "species": "Rattus norvegicus",
+      "taxid": 10116,
+      "accession": "XR_005503128.2",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 613,
+      "mapped_human_bases": 561,
+      "mapped_human_coverage": 0.777008,
+      "identity_to_human": 0.782531,
+      "gap_fraction": 0.337297,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    },
+    {
+      "species": "Canis lupus familiaris",
+      "taxid": 9615,
+      "accession": "XR_005386760.1",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 592,
+      "mapped_human_bases": 578,
+      "mapped_human_coverage": 0.800554,
+      "identity_to_human": 0.82526,
+      "gap_fraction": 0.36,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    },
+    {
+      "species": "Bos taurus",
+      "taxid": 9913,
+      "accession": "DQ222453.1",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 522,
+      "mapped_human_bases": 511,
+      "mapped_human_coverage": 0.707756,
+      "identity_to_human": 0.726027,
+      "gap_fraction": 0.435676,
+      "comparable_boundary_anchor_bases": 20,
+      "qc_status": "FAIL_LOCALIZATION"
+    },
+    {
+      "species": "Monodelphis domestica",
+      "taxid": 13616,
+      "accession": "XR_008913222.1",
+      "note": "",
+      "alignment_length_nt": 925,
+      "ungapped_segment_length_nt": 766,
+      "mapped_human_bases": 608,
+      "mapped_human_coverage": 0.842105,
+      "identity_to_human": 0.751645,
+      "gap_fraction": 0.171892,
+      "comparable_boundary_anchor_bases": 40,
+      "qc_status": "PASS"
+    }
+  ],
+  "sequences": [
+    {
+      "name": "Homo sapiens",
+      "taxid": 9606,
+      "accession": "NR_003287.4",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCGCGAAGCGGGGCUGGGCGCGCGCCGCGGCUGGACGAGGCGCCGCCGCC--CCCCCCACG----------------------CCCGGGGCACCCCCC-----------UCGCGGCCCUCCCCCGCCCC-ACCCCGCGCGCGCCGCUCGCUCCCU-CCCCGCCC----------------------------------------------------------------------------------------CGCGCCCUCUCUCUCUCUCUCUCCCCCGCUCCCCGUCCUCCCCCCUCCCCGGGGGAGCGCCGCGUGGGGGCGGCGGCGGGGGGAGAAG------------------GGUCGGGGCGGCAGGGGCCGGCGGCGGC-------CCGCCGCGGGGCCCCGGCGGCGGGGGC-----ACGGUCCCCCGCGAGG-------------GGGGCCCGGGCACCC--GGGGGGCCGGCGGCGGCGGCGACUCUGGACGCGAGCCGGGCCCUUCCCGUGGAUCGCCCCAGCUGCGGCGGGCGUCGCGGCCGCCCC-CGGGGAGCCCGGCGGGC-GCCGGCGCGCCCCCCCCCCCAC---------CCCACGUCUCGUCGCGCGCGCGUCCGCUGGGGGCGGGGAGCGGUCG------GGCGGCGGCGGUCGGC-----GGGCGGCGGGGCGGGGCGGUUCGUCCCCCCGCCCUACCCCCCC---GGCCCCGUCCGCCCCCCGUUCCCCCCUCCUCCUCGGCGCGCGGCGGCGGCGGCGGCAGGCGGCGGAGGGGCCGCGGGCCGGUCCCCCCCGCCGGGU-----CCGCCCCCGGGGCCGCGGUU--CCGCGCGGCG-CCUCGCCUCGGCCGGCGCCUAGCAGCCGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    },
+    {
+      "name": "Pan troglodytes",
+      "taxid": 9598,
+      "accession": "XR_008545338.2",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCGCGAAGCGGGGCUGGGCGCGCGCCGCGGCUGGACGAGGCGCCGCCGCC--CCCCCCACG----------------------CCCGGGGCACCCCCC-----------UCGCGGCCCUCCCCCGCCCC-ACCCCGCGCGCGCCGCUCGCUCCCCGCCCCCCCC----------------------------------------------------------------------------------------CGCGCCCUCUCUCCCCCUCUCUCUCCCGCUCCCCGUCCUCCCCCCUCCCCGGGGGAGCGCCGCGUGGGGGCGGCGGGUGGGGGAGAAG------------------GGUCCGGGACGGGCGGGGGCGCGGCGGCG-----GCCGCCGCGGGGCCCCGGCGGCGGGGGC-----ACGGUCCCCCGCGAGG-------------GGGGCCCGGGCACCC--GGGGGGCCGGCGGCGGCGGCGACUCUGGACGCGAGCCGGGCCCUUCCCGUGGAUCGCCCCAGCUGCGGCGGGCGUCGCGGCCGCCCC-CGGGGAGCCCGGCGGGC-GCCGGCGCGCCCCCCUCUCCCC---------GUGUCGUCGCUCCG----------UCGCGGGGGCGGGGAGCGGUCGGGCGGCGGCGGCGGCGGUCGGU-----GGGCGGCGGGGCGGGGCGGUUCGUCCCCCCGCCCUCCCCCCC----GGCCCCGUCCGUCCCCCGUUCCUCCCCCGUCCUCGCCGCGCGGCGGCGGCGGCGGC-GGCGGAGUUGGGGCCGCGGGCCGGUCCCCCCCGCCGGGU-----CCGCCCCCGGGGCCGCGGUU--CCGCGCGGCG-CCUCGCCUCGGCCGGCGCCUAGCAGCCGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    },
+    {
+      "name": "Macaca mulatta",
+      "taxid": 9544,
+      "accession": "XR_003725683.2",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCAUGAAGCAGGGCUGGGCACGUGCCGCGGCUGGACGAAGUGCCGCCGCU-GCCCCCCAUG----------------------CCCGGGGCACCCCCU-----------UCGCGGCCCUCCCCCGCCCC-ACCCUGUGCCUCUCACU---------CUCUCCCC----------------------------------------------------------------------------------------UGUGCCCUCUCUCCCCCUCCCUUCCCC--------------------------------------------AGGGGUGUGGGGGGAAG------------------GGUCGGGCUGAGGGG---------CGGCG-----GUGGCCGCAGGGCCCCAGCAGCGGGGGC-----AUGGUCCCCCACGGGG-------------GGAUCCCGGGCACCC--GGGGGGCCGGUGGCGGCGGCGACUCUGGACGCAAGCCGGGCCCUUCCUGUGGAUCGCCCCAGCUGCGGCGGGCAUUGUGGCCGCCCC-CGGGGAGCCCGGCGGGC-GCCGGCACGCCCCGCUCGCUCU---------GCCAUCGUGCGCGU----------CCGCGGGGGCGGGGAGCGAUCA------GGUGUCGGCGG--------------GGCGGCGGGCGGGGGUUCGUCCUCCCGCCUUACCCC-------GGCCCGUCCGCCCCCCGUUCCGCCCCC-----------------------------------------------------UCCCCCCUGCCGGGU-----CGGCCCCCAGGGCCGCAGUU--CCGCACAGUG-CCUCGCCUCGGCCGGUGCCUAGCAGCCGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    },
+    {
+      "name": "Mus musculus",
+      "taxid": 10090,
+      "accession": "NR_003279.1",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCGCGAAGCGGGGCUGGGCGCGCGCCGCGGCUGGACGAGGCGCCGCCGCC-CUCUCCCACG----------------------UCCGGGGAGACCCCCCGUCCUUUCCGCCCGGGCCCGCCCUCCCCUCUUCCCCGCGGGG----------CCCCGUCGUCCCC----------------------------------------------------------------------------------------CGCGUCGUCGCCA--------CCUCUC-----UUCCCCCCUCCUUCUUCCCGU------------------CGGGGGGCGGGUCGGGGGUCGGCGCGCG-------GCGCGGGCUCCGGGG---------CGGCGGGUCCAACCCCGCGGGGGUUCCGGAGCGGGAGGAACCAGCGGUCCCCGGUGGGG----------CGGGGGGCCCGGACACUC--GGGGGGCCGGCGGCGGCGGCGACUCUGGACGCGAGCCGGGCCCUUCCCGUGGAUCGCCUCAGCUGCGGCGGGCGUCGCGGCCGCUCC-CGGGGAGCCCGGCGGGU-GCCGGCGCGGGUCCCCUCCCCGCGGGGCCUCGCUCCACCCCCCCAU------CGCCUCUCCC------------------------------------------GAGGUGCGUGGCGGGG--GCGGGCGGGCGUGUCCCGCGCGUGUGGGGGGAACCUCCG--------------------------------CGUCGGU-------------------------------GUUCCCCCGCCGGGU-----CCGCCCCCCGGGCCGCGGUUUUCCGCGCGGCGCCCCCGCCUCGGCCGGCGCCUAGCAGCCGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    },
+    {
+      "name": "Rattus norvegicus",
+      "taxid": 10116,
+      "accession": "XR_005503128.2",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCGCGAAGCGGGGCUGGGCGCGCGCCGCGGCUGGACGAGGCGCCGCCGCCCCCCUCCCACG----------------------UCCGGGGAGACCCCCU--CCUUUCCGCCCGGGCCCGCCCUCCCCUC-UCCCCGCGGGG----------CCCCGCCGUCCCC----------------------------------------------------------------------------------------CGCGUCGUCGCCGUGGUCCCCUCCUCC-----CUCCCUUCUUCCCCGUCCGCG------------------GGGGGGACGGGGCGGGUGCGGGGGGGCGCGCGCGCGCGCGGGCCCAGGGG---------CGGCGGGUCCAACCCCGCGCGGGCC--GGAGCGGGGGGAACCCGCGGGCCCCCGGUGGG-----------GGGGGGCCCGGACACCCGGGGGGGGCCGGCGGCGGCGGCGACUCUGGACGCGAGCCGGGCCCUUCCCGUGGAUCGCCCCAGCUGCGGCGGGCGUCGCGGCCGCUCC-CGGGGAGCCCGGCGGGUCGCCGGCGCGGGGUUUUCCUCCG---------GCCUCGUCCUCCCCC------UUCCCCCUCC------------------------------------------------------------GCGGGGUCGGGGGUUCCCGGGGUUCGGGGUUCUCCUCCG--------------------------------CGUCGGC------------------------------GGUUCCCCCGCCGGGU-----GCGCCCCCCGGGCCGCGGUUUCCCGCGCGGCG-CCUCGCCUCGGCCGGCGCCUAGCAGCCGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    },
+    {
+      "name": "Canis lupus familiaris",
+      "taxid": 9615,
+      "accession": "XR_005386760.1",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCGCGAAGCGGGGCUGGGCGCGCGCCGCGGCUGGACGAGGCGCCGCCGCC--CCUCCCACG----------------------CCCGGGGCACCCCCG-----------CCCGGGCCCGCCCCCGCGGC------------------CCUCCUCCGCCCCACCC----------------------------------------------------------------------------------------CGCGC---GGCUCCCCCCCGCUCUCCUCUUCUCCCCCUCCCCCCCUUCCCGGG------------------GGCGGCGGGGGGCGGGG------------------AGGCGGGGCGGGGGG--------------------UUGCGGCGGGGCCCCGGCGGCGGGGGA-------GGUCCCCCGCGGGGCCCGCGGGCCCACGGGGCCCGGGCACCC---GGGGGCCGGCGGCGGCGGCGACUCUGGACGCGAGCCGGGCCCUUCCCGUGGAUCGCCCCA-CUGCGGCGGGAGUCGCGGCCGCACC-C--GGAGCCCGGCGGC--GCCCGCGCCCCCCGCGCUCGCG---------CGCUCGUGCUCCCCU------GUUCCUCGGCGGCGGCG------------------------------------------------------CUCGUUCCCUCCCCCUUCUCU------CCUCUCCUCCGCCCCCUCCCCUCGCCUCCGCCUCCGCCCUCGGCUUCUGC-------------------------------UCUCCCCCCCCCCCU-----CCGCCCCCGG---CCGCGUU--CCGCGCGGCG-CCUCGCCUCGGCCGGCGCCUAGCAGCCGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    },
+    {
+      "name": "Monodelphis domestica",
+      "taxid": 13616,
+      "accession": "XR_008913222.1",
+      "lineage": "Mammalia",
+      "clades": [
+        "Eukaryota",
+        "Metazoa",
+        "Vertebrata",
+        "Mammalia"
+      ],
+      "sequence": "GUCGGGCUGGGGCGCGAAGCGGGGCUGGGCGCGCGCCGCGGCUGGACGAGGCGCCGCCGCU-CCCCCUCCCGGCGCUCUCCCGCCGGACGCCUCCCCGCGGCCCCCCCGC--CCGCUCCCCGCCGGGUUCCCUUCCCCGCGGCUCCCCUGGC----------CUCCCCCCCUCCCACGCCUCCCCGCCGGCCAAACCGCGGCGGUGGUGGGCGGGGGGGGACGGGGGGGGCGCGCGGGGGGUCGGGGGCGCGGGUCCCGCCCGCGUCUCCCCUCCCUCCCGCCCCCCCUCGCUCCUCUCCCACCCUCCCCACCGCG----------------GCGGUGGGGGGGCAGGGGGGGGGAUCGGCG-------CCAGGGGGUUCCAAG---------UCGCGGGGUCGGCCCGGCGGGGGUUGGUCGGUGCGGUC-----GGGGUCCGGGGUUCGG------GCCCGGCGGGUGCCCGGGAACC---GGGGGUCGGCGGCGGCGGCGACUCUGGACGCGAGCCGGGCCCUUCCCGUGGAUCGCCCCAGCUGCGGCGGGCGUCGCGGCCGGGCC-CGGGGAGCCCGGGGGCGGGCCUGCUCGGCCCGCCGGCCUCGG------G---------------G---GGGUCUGCCCUGGGGCGCGCGCGGCUC------CCCGCCCGCGGCCCCCCUCCGGGGGGUGUCGGCGGCGGGGUGGGUCCGCGCGCCCC---------GGGUGCCCCUCCG------GCCGCGGGAUCUG-------------UGGCGGC-------------------------------CCUCCCCCCCCGGGU-----GC-CCCCCCGGGCCUCGGU---CCCCGCGGCG-UCCCGCCUCGGCCGGCGCCUAGCAGCUGACUUAGAACUGGUGCGGACCAGGGG",
+      "qc_status": "PASS"
+    }
+  ]
+}

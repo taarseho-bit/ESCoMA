@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RiboVine｜ES保守性分析</title>
+  <link rel="stylesheet" href="styles.css?v=all-es-mammal-v1">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+      <div><div class="brand-line">RiboVine <span>真实数据工作台</span></div><h1>核糖体扩增区段保守性分析</h1></div>
+    </div>
+    <div class="header-actions">
+      <button id="importButton" class="button button-secondary" type="button">导入对齐序列</button>
+      <button id="exportButton" class="button button-primary" type="button">导出排行结果</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="control-band" aria-label="分析参数">
+      <label><span>扩增区段</span><select id="esSelect"><option value="">正在载入人源参考...</option></select></label>
+      <label><span>比较类群</span><select id="cladeSelect"><option value="Eukaryota">全部真核</option><option value="Metazoa">后生动物</option><option value="Vertebrata">脊椎动物</option><option value="Mammalia">哺乳动物</option></select></label>
+      <fieldset class="window-fieldset"><legend>人源窗口长度</legend><label><input type="checkbox" name="window" value="20" checked><span>20 nt</span></label><label><input type="checkbox" name="window" value="30" checked><span>30 nt</span></label><label><input type="checkbox" name="window" value="40" checked><span>40 nt</span></label><label><input type="checkbox" name="window" value="50" checked><span>50 nt</span></label></fieldset>
+      <label class="entropy-control"><span>低熵阈值 <strong id="entropyThresholdLabel">≥ 0.65</strong></span><input id="entropyThreshold" type="range" min="0.35" max="0.90" step="0.05" value="0.65"></label>
+      <label><span>排行去重</span><select id="rankMode"><option value="independent">独立候选窗口</option><option value="all">保留全部窗口</option></select></label>
+    </section>
+
+    <section class="context-strip" aria-live="polite">
+      <div><span>数据集</span><strong id="datasetLabel">正在载入</strong></div>
+      <div><span>参考坐标</span><strong>人源ES无缺口位置</strong></div>
+      <div><span>参与物种</span><strong id="speciesCount">--</strong></div>
+      <div><span>人源ES长度</span><strong id="alignmentLength">--</strong></div>
+      <div><span>本地LSU库</span><strong id="lsuLibraryStatus">正在读取QC</strong></div>
+      <div><span>分析状态</span><strong id="analysisStatus">跨物种MSA待构建</strong></div>
+    </section>
+
+    <nav class="view-tabs" aria-label="分析视图">
+      <button type="button" class="view-tab active" data-tab="landscape" aria-selected="true">景观分析</button>
+      <button type="button" class="view-tab" data-tab="ranking" aria-selected="false">候选排行</button>
+      <button type="button" class="view-tab" data-tab="statistics" aria-selected="false">数据总览</button>
+    </nav>
+
+    <section id="landscapeTab" class="tab-panel active">
+      <section class="summary-grid" aria-label="最高分窗口摘要">
+        <article class="summary-card primary-card"><span class="summary-label">人源最高分窗口</span><strong id="topCoordinates">--</strong><span id="topContext">--</span></article>
+        <article class="summary-card"><span class="summary-label">保守性</span><strong id="topScore">--</strong><span>一致性 × 覆盖度</span></article>
+        <article class="summary-card"><span class="summary-label">低熵</span><strong id="topLowEntropy">--</strong><span id="topEntropyContext">待跨物种计算</span></article>
+        <article class="summary-card"><span class="summary-label">比对覆盖度</span><strong id="topCoverage">--</strong><span id="topCoverageContext">待跨物种MSA</span></article>
+      </section>
+
+      <section class="alignment-block">
+        <div class="selected-window-heading"><div><span class="eyebrow">全长原始序列与位点约束</span><h3 id="selectionSubtitle">--</h3></div><div class="selected-metrics"><span>保守性 <strong id="selectedScore">--</strong></span><span>低熵 <strong id="selectedLowEntropy">--</strong></span><span>覆盖度 <strong id="selectedCoverage">--</strong></span><span>物种数 <strong id="selectedSpecies">--</strong></span></div></div>
+        <div class="alignment-key"><span class="human-key"></span><span>人源参考</span><i></i><span>选中窗口</span><i class="mismatch-key"></i><span>替换</span><b>–</b><span>缺口</span></div>
+        <div id="alignmentViewer" class="alignment-viewer embedded-alignment"></div>
+      </section>
+
+      <section class="analysis-section landscape-section">
+        <div class="section-heading"><div><h2>人源ES双层约束景观</h2><p>横轴为人源ES序列位置；其他物种用于计算对应窗口的跨物种约束</p></div><div id="legend" class="legend" aria-label="窗口长度图例"></div></div>
+        <div id="chart" class="chart-wrap genome-chart" role="img" aria-label="保守性和低序列熵双轨图"></div>
+        <div id="chartTooltip" class="chart-tooltip" hidden></div>
+      </section>
+    </section>
+
+    <section id="rankingTab" class="tab-panel" hidden>
+      <div class="ranking-workspace">
+        <div class="ranking-section">
+          <div class="section-heading compact-heading"><div><h2>人源保守窗口排行</h2><p>先通过低熵阈值，再按跨物种保守性从高到低排列；点击候选可回到景观查看对应区段</p></div><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div>
+          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">低熵</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="statisticsTab" class="tab-panel statistics-tab" hidden>
+      <section class="statistics-heading">
+        <div><span class="eyebrow">跨物种 ES 数据矩阵</span><h2>数据覆盖与质量控制总览</h2><p>以22个人源ES为参考轴；定位失败表示当前证据不足，不解释为该物种缺失此ES</p></div>
+        <div class="statistics-key" aria-label="定位状态图例"><span><i class="status-pass"></i>通过定位QC</span><span><i class="status-fail"></i>定位未确定</span><span><i class="status-pending"></i>待复合LSU</span></div>
+      </section>
+
+      <section id="databaseLayerStats" class="database-layer-stats" aria-label="数据层级统计"></section>
+
+      <section class="statistics-layout">
+        <article class="statistics-panel">
+          <div class="section-heading compact-heading"><div><h2>各ES物种覆盖</h2><p>条形长度为通过定位QC的哺乳动物比例</p></div></div>
+          <div id="esCoverageChart" class="coverage-chart" role="img" aria-label="每个ES通过定位质控的物种数"></div>
+        </article>
+        <article class="statistics-panel">
+          <div class="section-heading compact-heading"><div><h2>各物种ES覆盖</h2><p>按通过定位QC的ES数量排序</p></div></div>
+          <div id="speciesCoverageChart" class="species-coverage-chart" role="img" aria-label="每个物种通过定位质控的ES数"></div>
+        </article>
+      </section>
+
+      <section class="matrix-section">
+        <div class="section-heading"><div><h2>ES × 物种定位矩阵</h2><p>每格对应一条可审计的同源判定；点击ES列名进入该ES景观</p></div><strong id="matrixSummary" class="matrix-summary">--</strong></div>
+        <div id="coverageMatrix" class="coverage-matrix"></div>
+      </section>
+
+      <section class="source-section">
+        <div class="section-heading"><div><h2>数据库来源与可追溯状态</h2><p>点击来源、原始文件或 DOI 可返回官方记录；不同数据库存在重叠，不相加为唯一序列总数</p></div></div>
+        <div id="sourceTable" class="table-scroll"></div>
+      </section>
+
+      <section class="source-section literature-section">
+        <div class="section-heading"><div><h2>文献与结构证据</h2><p>用于核对 ES 命名、边界和跨物种结构；文献证据不自动等同于已完成序列定位</p></div></div>
+        <div id="literatureTable" class="table-scroll"></div>
+      </section>
+    </section>
+
+    <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 平均成对一致性 × 比对覆盖度</span><span id="entropyMethod"><i class="method-symbol coverage"></i>低熵需在同源定位与MSA后计算</span><span><i class="method-symbol score"></i>人源坐标用于后续编辑靶点设计</span><strong id="dataNotice">当前载入人源真实参考；不从单序列推断保守性</strong></footer>
+  </main>
+
+  <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-heading"><div><h2>导入已对齐FASTA</h2><p>必须包含Homo sapiens；所有序列等长，允许A、C、G、U、T、N和“-”。</p></div><button class="close-button" value="cancel" aria-label="关闭" type="submit">×</button></div><label><span>ES名称</span><input id="importName" value="自定义ES" autocomplete="off"></label><label><span>已对齐FASTA</span><textarea id="fastaInput" spellcheck="false" placeholder=">Homo_sapiens|Mammalia&#10;ACGUACGU--ACGU&#10;>Mus_musculus|Mammalia&#10;ACGUACGUUUACGU"></textarea></label><p id="importError" class="error-message" role="alert"></p><div class="dialog-actions"><button class="button button-secondary" value="cancel" type="submit">取消</button><button id="loadFastaButton" class="button button-primary" value="default" type="button">载入并分析</button></div></form></dialog>
+  <script src="app.js?v=provenance-v1"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "updated_at": "2026-08-13",
+  "counting_warning": "各集合存在重叠，不可相加为唯一生物序列总数。",
+  "collections": {
+    "silva_lsu_ref_nr99": { "records": 95279, "release": "138.2", "status": "LOCAL_FULL_DATABASE_VERIFIED" },
+    "rfam_rf02543": { "records": 107553, "species": 2616, "significant_region_taxids": 2575, "region_table_rows": 146122, "significant_region_rows": 107470, "seed_sequences": 88, "release": "15.1", "status": "LOCAL_FULL_DATABASE_VERIFIED" },
+    "rfam_rf00002": { "records": 16562, "species": 1591, "significant_region_taxids": 1537, "region_table_rows": 47585, "significant_region_rows": 16501, "seed_sequences": 61, "release": "15.1", "status": "LOCAL_FULL_DATABASE_VERIFIED" },
+    "rod_v1_2": { "records": 69480, "reference_records": 11935, "genomes": 11935, "release": "1.2 GoldenRod", "status": "LOCAL_FULL_DATABASE_VERIFIED" },
+    "rod_species_panel_v1": { "target_species": 135, "matched_species": 37, "matching_operon_variants": 10383, "selected_operons": 37, "status": "DISCOVERY_CANDIDATES_SELECTED_NOT_ES_LOCALIZED" },
+    "eukaryome_lsu_v2_0": { "records": 377679, "target_species": 135, "matched_species": 78, "matching_candidates": 646, "selected_candidates": 175, "release": "2.0", "status": "LOCAL_FULL_DATABASE_VERIFIED_CANDIDATES_NOT_ES_LOCALIZED" },
+    "eukaryome_long_v2_0": { "records": 193705, "target_species": 135, "matched_species": 62, "matching_candidates": 447, "selected_candidates": 135, "release": "2.0", "status": "LOCAL_FULL_DATABASE_VERIFIED_CANDIDATES_NOT_ES_LOCALIZED" },
+    "eukaryome_species_panel_v1": { "target_species": 135, "matching_candidates": 1093, "selected_candidates": 310, "selected_unique_sequence_md5": 224, "duplicate_selected_records": 86, "status": "DISCOVERY_CANDIDATES_SELECTED_NOT_ES_LOCALIZED" },
+    "ncbi_species_panel": { "species": 135, "major_clades": 25, "lsu_qc_pass": 79 },
+    "human_es_reference": { "es_records": 22, "release": "v1.2" },
+    "mammal_all_es_matrix": { "species": 37, "directly_mapped_es": 20, "pending_composite_es": 2, "es_species_calls": 740, "localization_qc_pass": 687, "localization_unresolved": 53 }
+  },
+  "sources": [
+    { "name": "SILVA LSU Ref NR99", "version": "138.2", "records": 95279, "status": "本地全量已验证", "provenance": "官方FASTA、MD5、DOI" },
+    { "name": "Rfam LSU_rRNA_eukarya", "version": "15.1 / RF02543", "records": 107553, "status": "本地全量已验证", "provenance": "FASTA、CM、Seed、CC0、SHA256" },
+    { "name": "Rfam 5.8S rRNA", "version": "15.1 / RF00002", "records": 16562, "status": "本地全量已验证", "provenance": "FASTA、CM、Seed、区域表、CC0、SHA256" },
+    { "name": "Ribosomal Operon Database", "version": "v1.2 GoldenRod", "records": 69480, "status": "本地全量已验证", "provenance": "完整operon、assembly、TaxID、DOI、SHA256" },
+    { "name": "NCBI Nucleotide", "version": "2026-08-13快照", "records": 135, "status": "物种工作面板已抓取", "provenance": "accession.version、TaxID、GenBank、FASTA、MD5" },
+    { "name": "Human ES Reference", "version": "v1.2", "records": 22, "status": "人源坐标与锚点已验证", "provenance": "坐标、锚点、MD5、文献" },
+    { "name": "文献证据注册表", "version": "2026-08-13", "records": 24, "status": "重点文献已登记", "provenance": "DOI、PMID/PMCID、ES与物种范围" }
+  ]
+}
