@@ -858,6 +858,7 @@
           renderStatistics();
           return;
         }
+        if (tab.dataset.tab === "methods") return;
         const dataset = state.datasets[state.currentEs];
         const sequences = state.datasets[state.currentEs].sequences.filter(s => s.clades.includes(state.currentClade));
         if (!dataset.analysisReady) {

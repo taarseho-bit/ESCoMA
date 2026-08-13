@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RiboVine｜ES保守性分析</title>
-  <link rel="stylesheet" href="styles.css?v=all-es-mammal-v1">
+  <link rel="stylesheet" href="styles.css?v=methods-v1">
 </head>
 <body>
   <header class="app-header">
@@ -40,6 +40,7 @@
       <button type="button" class="view-tab active" data-tab="landscape" aria-selected="true">景观分析</button>
       <button type="button" class="view-tab" data-tab="ranking" aria-selected="false">候选排行</button>
       <button type="button" class="view-tab" data-tab="statistics" aria-selected="false">数据总览</button>
+      <button type="button" class="view-tab" data-tab="methods" aria-selected="false">计算方法</button>
     </nav>
 
     <section id="landscapeTab" class="tab-panel active">
@@ -107,10 +108,120 @@
       </section>
     </section>
 
+    <section id="methodsTab" class="tab-panel methods-tab" hidden>
+      <section class="methods-heading">
+        <div><span class="eyebrow">RiboVine 计算定义</span><h2>从跨物种比对到保守窗口排行</h2><p>所有得分均在通过同源定位 QC 的等长 MSA 上计算；人源无缺口碱基定义滑动窗口坐标。</p></div>
+        <div class="method-version"><span>当前实现</span><strong>序列约束 v1.0</strong><small>不包含结构熵或功能证据</small></div>
+      </section>
+
+      <section class="method-flow" aria-label="计算流程">
+        <article><span>01</span><strong>定位与质控</strong><small>仅保留通过 ES 同源定位 QC 的物种</small></article>
+        <i aria-hidden="true">→</i>
+        <article><span>02</span><strong>构建等长 MSA</strong><small>人源非缺口列映射为 ES 位置 1…L</small></article>
+        <i aria-hidden="true">→</i>
+        <article><span>03</span><strong>滑动窗口</strong><small>分别扫描 20、30、40、50 nt</small></article>
+        <i aria-hidden="true">→</i>
+        <article><span>04</span><strong>双层筛选</strong><small>低熵达标后按保守性降序排列</small></article>
+      </section>
+
+      <section class="formula-section">
+        <div class="section-heading compact-heading"><div><h2>一、窗口与有效比较位点</h2><p>窗口长度按人源碱基数计数；人源插入区内的每个非缺口位置对应一个 MSA 列。</p></div></div>
+        <div class="formula-layout">
+          <div class="formula-copy">
+            <div class="equation"><span>全部可能配对位点</span><strong>P = C(n, 2) × w = n(n − 1)w / 2</strong></div>
+            <p><b>n</b> 为当前比较类群中通过 QC 的物种数，<b>w</b> 为人源窗口长度。每一对物种在每个窗口列最多贡献一次比较。</p>
+            <p>若任一序列在该列为缺口“−”或未知碱基“N”，该物种对在此列不计入有效比较。A、C、G、U 为可比较状态；导入数据中的 T 会标准化为 U。</p>
+          </div>
+          <div class="msa-example" aria-label="四个物种四个位点的示例比对">
+            <div class="msa-row msa-head"><span>示例 MSA</span><b>1</b><b>2</b><b>3</b><b>4</b></div>
+            <div class="msa-row human"><span>人</span><b>A</b><b>C</b><b>G</b><b>U</b></div>
+            <div class="msa-row"><span>物种 B</span><b>A</b><b>C</b><b>G</b><b>U</b></div>
+            <div class="msa-row"><span>物种 C</span><b>A</b><b>C</b><b class="invalid">−</b><b>U</b></div>
+            <div class="msa-row"><span>物种 D</span><b>A</b><b class="mismatch">U</b><b>G</b><b class="invalid">N</b></div>
+            <div class="msa-summary"><span>n = 4</span><span>w = 4</span><span>P = 24</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="formula-section">
+        <div class="section-heading compact-heading"><div><h2>二、保守性：一致性与覆盖度共同约束</h2><p>高一致性不能抵消大量缺口，因此最终保守性同时惩罚信息缺失。</p></div></div>
+        <div class="formula-grid three">
+          <article class="formula-panel">
+            <span class="formula-index">2.1</span><h3>平均成对一致性</h3>
+            <div class="equation large">I = M / V</div>
+            <p><b>M</b>：碱基相同的有效物种对位点数；<b>V</b>：排除缺口和 N 后的有效物种对位点总数。</p>
+          </article>
+          <article class="formula-panel">
+            <span class="formula-index">2.2</span><h3>比对覆盖度</h3>
+            <div class="equation large">C = V / P</div>
+            <p>覆盖度衡量全部理论比较中实际具有明确碱基的比例，范围为 0–1。</p>
+          </article>
+          <article class="formula-panel emphasis">
+            <span class="formula-index">2.3</span><h3>窗口保守性得分</h3>
+            <div class="equation large">S<sub>cons</sub> = I × C = M / P</div>
+            <p>范围为 0–1。只有“碱基相同且数据完整”的窗口才能接近 1。</p>
+          </article>
+        </div>
+        <div class="worked-example"><strong>示例结果</strong><span>M = 15</span><span>V = 18</span><span>P = 24</span><span>I = 15/18 = 0.833</span><span>C = 18/24 = 0.750</span><b>S<sub>cons</sub> = 0.625</b></div>
+      </section>
+
+      <section class="formula-section">
+        <div class="section-heading compact-heading"><div><h2>三、低序列熵：位点碱基分布的一致程度</h2><p>这里计算的是 MSA 一级序列 Shannon 熵，不是 RNA 构象熵、折叠熵或结构置信度。</p></div></div>
+        <div class="entropy-layout">
+          <div class="entropy-steps">
+            <div class="equation-block"><span>位点碱基频率</span><strong>p<sub>b,k</sub> = count(b at k) / Σ<sub>x∈{A,C,G,U}</sub> count(x at k)</strong><small>计算频率时排除缺口和 N</small></div>
+            <div class="equation-block"><span>位点 Shannon 熵</span><strong>H<sub>k</sub> = −Σ<sub>b∈{A,C,G,U}</sub> p<sub>b,k</sub> ln(p<sub>b,k</sub>)</strong><small>约定 0 × ln(0) = 0；自然对数</small></div>
+            <div class="equation-block active"><span>归一化低熵</span><strong>LE<sub>k</sub> = 1 − H<sub>k</sub> / ln(4)</strong><small>单一碱基占优时趋近 1；四种碱基均等时为 0</small></div>
+            <div class="equation-block"><span>窗口低熵</span><strong>LE<sub>W</sub> = (1/w) Σ<sub>k∈W</sub> LE<sub>k</sub></strong><small>对窗口对应 MSA 列的位点低熵取算术平均</small></div>
+          </div>
+          <div class="entropy-scale" role="img" aria-label="碱基分布由单一到均匀时低熵从1下降到0">
+            <div class="distribution"><span><i style="width:100%"></i></span><b>A 100%</b><strong>LE = 1.000</strong></div>
+            <div class="distribution mixed"><span><i style="width:75%"></i><i style="width:25%"></i></span><b>C 75% · U 25%</b><strong>LE = 0.594</strong></div>
+            <div class="distribution uniform"><span><i></i><i></i><i></i><i></i></span><b>A/C/G/U 各 25%</b><strong>LE = 0.000</strong></div>
+          </div>
+        </div>
+        <div class="worked-example"><strong>示例窗口</strong><span>LE₁ = 1.000</span><span>LE₂ = 0.594</span><span>LE₃ = 1.000</span><span>LE₄ = 1.000</span><b>LE<sub>W</sub> = 0.899</b></div>
+      </section>
+
+      <section class="formula-section">
+        <div class="section-heading compact-heading"><div><h2>四、双层筛选、排序与去重</h2><p>低熵是准入条件，保守性是主排序指标；两者不合并成一个任意加权总分。</p></div></div>
+        <div class="selection-diagram">
+          <div><span>全部滑动窗口</span><strong>每种 w 扫描 L − w + 1 个窗口</strong></div><i>→</i>
+          <div><span>第一层</span><strong>保留 LE<sub>W</sub> ≥ 阈值</strong><small>当前默认阈值 0.65</small></div><i>→</i>
+          <div><span>第二层</span><strong>按 S<sub>cons</sub> 从高到低</strong><small>同分时依次按低熵、短窗口、靠前坐标</small></div><i>→</i>
+          <div><span>独立候选模式</span><strong>同长度窗口重叠比例 &lt; 0.60</strong><small>最多保留 100 个候选</small></div>
+        </div>
+        <div class="formula-layout rule-layout">
+          <div class="formula-copy">
+            <div class="equation"><span>重叠比例</span><strong>R(A,B) = overlap(A,B) / min(|A|, |B|)</strong></div>
+            <p>仅在相同窗口长度内执行去重。候选按排序依次进入结果集；若与已接收的同长度窗口重叠达到 60%，则跳过该候选。“保留全部窗口”模式不执行此步骤。</p>
+          </div>
+          <div class="window-overlap" role="img" aria-label="两个窗口重叠比例示意">
+            <div class="window-axis"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="window-bar a">窗口 A · 20 nt</div>
+            <div class="window-bar b">窗口 B · 20 nt</div>
+            <div class="overlap-label">重叠 12 nt → R = 12/20 = 0.60 → 独立模式跳过 B</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="formula-section method-notes">
+        <div class="section-heading compact-heading"><div><h2>五、坐标、边界与解释限制</h2></div></div>
+        <dl class="definition-grid">
+          <div><dt>人源 ES 坐标</dt><dd>从人源 MSA 序列删除缺口后按 1 开始计数，是滑动窗口和实验靶点设计的主坐标。</dd></div>
+          <div><dt>人 28S 绝对坐标</dt><dd>人源 ES 坐标加该 ES 在参考 28S 中的起始偏移量，仅用于已经建立可靠坐标映射的 ES。</dd></div>
+          <div><dt>短 ES</dt><dd>当 ES 长度小于已选窗口长度时，不强行构造 20 nt 窗口，而是将整个 ES 作为一个窗口评分。</dd></div>
+          <div><dt>比较类群</dt><dd>选择全部真核、后生动物、脊椎动物或哺乳动物会改变 n、P、碱基频率以及最终排行。</dd></div>
+          <div><dt>定位失败</dt><dd>未通过同源定位 QC 的序列不参与公式计算；这表示当前证据不足，不表示该物种生物学上缺失此 ES。</dd></div>
+          <div><dt>得分用途</dt><dd>得分用于发现候选保守子区段，不直接证明功能、结构稳定性、可编辑性或实验效应。</dd></div>
+        </dl>
+      </section>
+    </section>
+
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 平均成对一致性 × 比对覆盖度</span><span id="entropyMethod"><i class="method-symbol coverage"></i>低熵需在同源定位与MSA后计算</span><span><i class="method-symbol score"></i>人源坐标用于后续编辑靶点设计</span><strong id="dataNotice">当前载入人源真实参考；不从单序列推断保守性</strong></footer>
   </main>
 
   <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-heading"><div><h2>导入已对齐FASTA</h2><p>必须包含Homo sapiens；所有序列等长，允许A、C、G、U、T、N和“-”。</p></div><button class="close-button" value="cancel" aria-label="关闭" type="submit">×</button></div><label><span>ES名称</span><input id="importName" value="自定义ES" autocomplete="off"></label><label><span>已对齐FASTA</span><textarea id="fastaInput" spellcheck="false" placeholder=">Homo_sapiens|Mammalia&#10;ACGUACGU--ACGU&#10;>Mus_musculus|Mammalia&#10;ACGUACGUUUACGU"></textarea></label><p id="importError" class="error-message" role="alert"></p><div class="dialog-actions"><button class="button button-secondary" value="cancel" type="submit">取消</button><button id="loadFastaButton" class="button button-primary" value="default" type="button">载入并分析</button></div></form></dialog>
-  <script src="app.js?v=provenance-v1"></script>
+  <script src="app.js?v=methods-v1"></script>
 </body>
 </html>
