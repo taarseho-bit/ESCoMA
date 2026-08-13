@@ -872,7 +872,9 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         const dataset = state.datasets[state.currentEs];
+        if (!dataset?.sequences?.length) return;
         const human = findHumanSequence(dataset.sequences);
+        if (!human) return;
         if (dataset.analysisReady) {
           renderChart(humanCoordinateMap(human).length);
           if (state.selected) renderSelection(dataset.sequences.filter(s => s.clades.includes(state.currentClade)));
