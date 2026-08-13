@@ -222,6 +222,6 @@
   </main>
 
   <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-heading"><div><h2>导入已对齐FASTA</h2><p>必须包含Homo sapiens；所有序列等长，允许A、C、G、U、T、N和“-”。</p></div><button class="close-button" value="cancel" aria-label="关闭" type="submit">×</button></div><label><span>ES名称</span><input id="importName" value="自定义ES" autocomplete="off"></label><label><span>已对齐FASTA</span><textarea id="fastaInput" spellcheck="false" placeholder=">Homo_sapiens|Mammalia&#10;ACGUACGU--ACGU&#10;>Mus_musculus|Mammalia&#10;ACGUACGUUUACGU"></textarea></label><p id="importError" class="error-message" role="alert"></p><div class="dialog-actions"><button class="button button-secondary" value="cancel" type="submit">取消</button><button id="loadFastaButton" class="button button-primary" value="default" type="button">载入并分析</button></div></form></dialog>
-  <script src="app.js?v=methods-v1"></script>
+  <script src="app.js?v=methods-v2"></script>
 </body>
 </html>
