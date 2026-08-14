@@ -24,7 +24,7 @@
     currentEs: "ES27L",
     selectedWindows: new Set([20]),
     visibleSeries: new Set([20]),
-    rankMode: "peaks",
+    rankMode: "all",
     rankMetric: "auto",
     topN: 20,
     results: [],
@@ -147,7 +147,7 @@
   }
 
   async function loadAllWindowManifest() {
-    const response = await fetch("data/windows/manifest.json?v=1.0.0-20260814-b47");
+    const response = await fetch("data/windows/manifest.json?v=1.0.0-20260814-b48");
     if (!response.ok) throw new Error(`全滑窗索引载入失败（HTTP ${response.status}）`);
     const manifest = await response.json();
     if (manifest.schema_version !== "1.0.0" || !manifest.datasets || manifest.step_nt !== 1) {
@@ -162,7 +162,7 @@
     const entry = state.allWindowsManifest?.datasets?.[esId];
     if (!dataset?.analysisReady || !entry || dataset.allWindowsLoaded) return;
     document.getElementById("analysisStatus").textContent = `正在载入 ${entry.window_count.toLocaleString()} 个逐 1 nt 窗口`;
-    const response = await fetch(`data/${entry.file}?v=1.0.0-20260814-b47`);
+    const response = await fetch(`data/${entry.file}?v=1.0.0-20260814-b48`);
     if (!response.ok) throw new Error(`${esId}全滑窗载入失败（HTTP ${response.status}）`);
     const payload = await response.json();
     if (payload.es_id !== esId || payload.window_count !== entry.window_count || !Array.isArray(payload.windows)) {
@@ -174,6 +174,8 @@
       ...dataset.summary,
       all_window_count: payload.window_count,
       complete_window_count: payload.complete_low_entropy_windows,
+      demo_window_count: payload.demo_low_entropy_windows ?? 0,
+      scored_window_count: payload.scored_low_entropy_windows ?? payload.complete_low_entropy_windows,
       planned_window_count: payload.window_count,
       step_nt: payload.step_nt
     };
@@ -336,7 +338,7 @@
         lowEntropy: Number.isFinite(window.S_LE) ? window.S_LE : null,
         coverage: window.order_coverage,
         jointScore: Number.isFinite(window.S_joint) ? window.S_joint : null,
-        scoreStatus: Number.isFinite(window.S_LE) && Number.isFinite(window.S_joint) ? "complete_b500" : "conservation_only"
+        scoreStatus: window.score_status || (Number.isFinite(window.S_LE) && Number.isFinite(window.S_joint) ? `demo_b${window.null_B}` : "conservation_only")
       };
     });
     state.results = results;
@@ -356,7 +358,7 @@
       [item.score, item.coverage].every(Number.isFinite)
     );
     const metric = state.rankMetric === "auto"
-      ? (state.rankMode === "peaks" ? "joint" : "conservation")
+      ? (passing.some(item => Number.isFinite(item.jointScore)) ? "joint" : "conservation")
       : state.rankMetric;
     const eligible = passing.filter(item => {
       if (metric === "joint") return Number.isFinite(item.jointScore);
@@ -404,13 +406,14 @@
     document.getElementById("alignmentLength").textContent = `${humanLength} nt`;
     const allWindows = dataset.summary?.all_window_count ?? dataset.windows?.length ?? 0;
     const completeWindows = dataset.summary?.complete_window_count ?? 0;
-    document.getElementById("analysisStatus").textContent = `已载入 ${allWindows.toLocaleString()} 个逐 1 nt 窗口 · ${completeWindows} 个完成低熵`;
+    const demoWindows = dataset.summary?.demo_window_count ?? 0;
+    document.getElementById("analysisStatus").textContent = `已载入 ${allWindows.toLocaleString()} 个逐 1 nt 窗口 · 正式 B=500 ${completeWindows} 个 · Demo ${demoWindows} 个`;
     document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA分区函数 + 二核苷酸零模型';
     document.getElementById("dataNotice").textContent = `离线E-INS-i缓存；人源不计分；${dataset.summary?.scoring_species ?? sequences.length - 1}种非人哺乳动物按目等权`;
-    const metric = state.rankMetric === "auto" ? (state.rankMode === "peaks" ? "联合分数" : "保守性") : ({ conservation: "保守性", low_entropy: "结构低熵", joint: "联合分数" }[state.rankMetric]);
+    const metric = state.rankMetric === "auto" ? (state.results.some(item => Number.isFinite(item.jointScore)) ? "联合分数" : "保守性") : ({ conservation: "保守性", low_entropy: "结构低熵", joint: "联合分数" }[state.rankMetric]);
     document.getElementById("rankingMethodNote").textContent = state.rankMode === "all"
-      ? `显示全部已完成保守性与质控的逐 1 nt 窗口，当前按${metric}排序；低熵待计算者显示为“—”`
-      : `将重叠至少 10 nt 的窗口合并为代表峰，当前按${metric}选峰；联合排行只纳入已完成 B=500 的窗口`;
+      ? `显示全部已完成保守性与质控的逐 1 nt 窗口，当前按${metric}排序；Demo B=20 用于快速展示，正式结果仍标记 B=500`
+      : `将重叠至少 10 nt 的窗口合并为代表峰，当前按${metric}选峰；Demo 与正式分数在计算状态列中分别标记`;
     renderSummary(state.selected, dataset.summary?.scoring_species ?? sequences.length - 1);
     renderLegend();
     renderTaxonLegend(sequences);
@@ -680,8 +683,16 @@
       svg.appendChild(svgEl("path", { d: conservationPath, class: "score-line", stroke: windowColor(size), "data-size": size }));
       const entropySeries = series.filter(item => Number.isFinite(item.lowEntropy));
       if (entropySeries.length) {
-        const entropyPath = entropySeries.map((d, i) => `${i ? "L" : "M"}${x((d.humanStart + d.humanEnd) / 2 - 1).toFixed(2)},${yTrack(d.lowEntropy, entropyTop).toFixed(2)}`).join(" ");
-        svg.appendChild(svgEl("path", { d: entropyPath, class: "score-line", stroke: windowColor(size), "data-size": size, opacity: ".72" }));
+        const segments = [];
+        entropySeries.forEach(datum => {
+          const current = segments.at(-1);
+          if (!current || datum.humanStart !== current.at(-1).humanStart + 1) segments.push([datum]);
+          else current.push(datum);
+        });
+        segments.filter(segment => segment.length > 1).forEach(segment => {
+          const entropyPath = segment.map((d, i) => `${i ? "L" : "M"}${x((d.humanStart + d.humanEnd) / 2 - 1).toFixed(2)},${yTrack(d.lowEntropy, entropyTop).toFixed(2)}`).join(" ");
+          svg.appendChild(svgEl("path", { d: entropyPath, class: "score-line", stroke: windowColor(size), "data-size": size, opacity: ".72" }));
+        });
         entropySeries.forEach(d => svg.appendChild(svgEl("circle", {
           cx: x((d.humanStart + d.humanEnd) / 2 - 1), cy: yTrack(d.lowEntropy, entropyTop), r: 3.2,
           class: "score-point", fill: windowColor(size), opacity: ".82"
@@ -719,7 +730,7 @@
     const body = document.getElementById("rankingBody");
     body.innerHTML = "";
     if (!rows.length) {
-      body.innerHTML = '<tr class="empty-ranking"><td colspan="10"><strong>当前筛选条件没有可排序窗口</strong><span>联合分数和结构低熵排序只纳入已完成 B=500 零模型的窗口。</span></td></tr>';
+      body.innerHTML = '<tr class="empty-ranking"><td colspan="10"><strong>当前筛选条件没有可排序窗口</strong><span>联合分数和结构低熵排序只纳入已有零模型分数的窗口。</span></td></tr>';
       return;
     }
     rows.forEach((row, index) => {
@@ -727,6 +738,10 @@
       const humanSequence = humanSequenceForWindow(sequences, row);
       const tr = document.createElement("tr");
       if (state.selected && row.size === state.selected.size && row.start === state.selected.start) tr.classList.add("selected");
+      const isOfficial = row.scoreStatus === "complete_b500";
+      const isDemo = row.scoreStatus.startsWith("demo_b");
+      const statusClass = isOfficial ? "complete" : isDemo ? "demo" : "pending";
+      const statusLabel = isOfficial ? "B=500 完成" : isDemo ? `Demo B=${row.null_B}` : "低熵待计算";
       tr.innerHTML = `
         <td class="rank-number">${String(index + 1).padStart(2, "0")}</td>
         <td><span class="legend-swatch" style="display:inline-block;margin-right:7px;background:${windowColor(row.size)}"></span>${row.size} nt${WINDOW_COLORS[row.size] ? "" : "（整段）"}</td>
@@ -736,7 +751,7 @@
         <td class="numeric">${scoreFmt(row.lowEntropy)}</td>
         <td class="numeric">${scoreFmt(row.jointScore)}</td>
         <td class="numeric">${pct(row.coverage)}</td>
-        <td><span class="calculation-status ${row.scoreStatus === "complete_b500" ? "complete" : "pending"}">${row.scoreStatus === "complete_b500" ? "B=500 完成" : "低熵待计算"}</span></td>
+        <td><span class="calculation-status ${statusClass}">${statusLabel}</span></td>
         <td><code>${humanSequence}</code></td>`;
       tr.addEventListener("click", () => {
         state.selected = row;

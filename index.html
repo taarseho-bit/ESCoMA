@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RiboVine｜ES保守性分析</title>
-  <link rel="stylesheet" href="styles.css?v=inventory-scope-v2">
+  <link rel="stylesheet" href="styles.css?v=es27l-demo-b20-b48">
 </head>
 <body>
   <header class="app-header">
@@ -22,7 +22,7 @@
       <label><span>扩增区段</span><select id="esSelect"><option value="">正在载入人源参考...</option></select></label>
       <div class="control-readout"><span>正式评分范围</span><strong>非人哺乳动物 · 目间等权</strong></div>
       <div class="window-picker" id="windowPicker"><span class="control-label">人源窗口长度</span><div class="window-picker-row"><div id="selectedWindowChips" class="window-chips" aria-label="已加入的窗口长度"></div><div class="window-add-wrap"><button id="windowAddButton" class="window-add-button" type="button" aria-expanded="false" aria-controls="windowAddMenu">＋ 添加长度</button><div id="windowAddMenu" class="window-add-menu" hidden><button type="button" data-window-size="20">20 nt</button><button type="button" data-window-size="30">30 nt</button><button type="button" data-window-size="40">40 nt</button><button type="button" data-window-size="50">50 nt</button></div></div></div></div>
-      <label><span>候选视图</span><select id="rankMode"><option value="peaks">代表窗口</option><option value="all">全部可评分窗口</option></select></label>
+      <label><span>候选视图</span><select id="rankMode"><option value="all" selected>全部可评分窗口</option><option value="peaks">代表窗口</option></select></label>
     </section>
 
     <section class="context-strip" aria-live="polite">
@@ -278,6 +278,6 @@
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <script src="app.js?v=inventory-scope-v3-b47"></script>
+  <script src="app.js?v=es27l-demo-b20-b48"></script>
 </body>
 </html>

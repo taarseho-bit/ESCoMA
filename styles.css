@@ -287,6 +287,7 @@ select:focus, input:focus, textarea:focus { border-color: var(--teal); box-shado
 .ranking-section { min-width: 0; }
 .calculation-status { display: inline-block; padding: 3px 6px; border-left: 3px solid; font-size: 9px; font-weight: 700; white-space: nowrap; }
 .calculation-status.complete { color: var(--teal-dark); background: var(--teal-soft); border-color: var(--teal); }
+.calculation-status.demo { color: #6f561f; background: #f4ecd7; border-color: #a67c37; }
 .calculation-status.pending { color: var(--muted); background: #eef1f2; border-color: var(--line-strong); }
 
 .scope-tab { padding-top: 18px; }
