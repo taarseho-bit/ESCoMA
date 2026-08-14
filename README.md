@@ -53,6 +53,12 @@ The scoring-boundary view keeps all 22 human ES records visible and separates
 structure scopes. No ES is labeled as a confirmed evolutionary birth event:
 the deep covariance-model birth-node gate remains pending.
 
+The data-overview view also publishes every currently available, QC-passing
+source LSU sequence from the 135-species discovery panel: 37 mammals and 42
+non-mammals. Each of the 79 records includes the full sequence, TaxID,
+accession, source link, length, retrieval date, and MD5. Non-mammals remain
+display-only until ES-level localization and MSA are complete.
+
 ## Rebuild
 
 The reproducible offline steps live outside the static site:
@@ -63,6 +69,7 @@ The reproducible offline steps live outside the static site:
 - `../scripts/compute_evoes_gpu_cache.py`
 - `../scripts/publish_evoes_checkpoints.py`
 - `../scripts/publish_evoes_all_windows.py`
+- `../scripts/publish_cross_species_inventory.py`
 
 The representative cache is `data/evoes_static_cache_v2.json`; the all-window
 manifest is `data/windows/manifest.json`.

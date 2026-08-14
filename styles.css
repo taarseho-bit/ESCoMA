@@ -311,6 +311,16 @@ select:focus, input:focus, textarea:focus { border-color: var(--teal); box-shado
 .scope-boundary-explainer strong, .scope-boundary-explainer span { display: block; }
 .scope-boundary-explainer strong { margin-bottom: 5px; color: var(--navy); font-size: 12px; }
 .scope-boundary-explainer span { color: var(--muted); font-size: 10px; line-height: 1.65; }
+.scope-decision-map { margin-top: 18px; border-top: 2px solid var(--navy); border-bottom: 1px solid var(--line); }
+.scope-decision-row { display: grid; grid-template-columns: 250px minmax(260px, .8fr) minmax(420px, 1.4fr); gap: 16px; align-items: start; padding: 14px 16px; border-bottom: 1px solid var(--line); border-left: 4px solid var(--navy); }
+.scope-decision-row:last-child { border-bottom: 0; }
+.scope-decision-row.preliminary { border-left-color: var(--teal); }
+.scope-decision-row.core-hold { border-left-color: var(--coral); }
+.scope-decision-row.unresolved { border-left-color: var(--mustard); }
+.scope-decision-row > strong { color: var(--navy); font-size: 11px; line-height: 1.55; }
+.scope-decision-row p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.scope-es-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.scope-es-list b { padding: 2px 5px; color: var(--ink); background: #eef2f3; border-left: 2px solid var(--line-strong); font-size: 9px; }
 .scope-table-section { margin-top: 22px; }
 .scope-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .scope-filters button { min-height: 30px; padding: 5px 9px; color: var(--muted); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 4px; font-size: 10px; font-weight: 700; }
@@ -459,6 +469,29 @@ tbody tr.selected { background: #dcefeb; box-shadow: inset 3px 0 var(--teal); }
 .database-layer-stats article:nth-child(-n+4) { border-bottom: 1px solid var(--line); }
 .database-layer-stats span, .database-layer-stats small { display: block; color: var(--muted); font-size: 10px; }
 .database-layer-stats strong { display: block; margin: 4px 0; color: var(--navy); font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.inventory-section { margin-top: 26px; }
+.inventory-controls { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-end; gap: 10px; }
+.inventory-search { display: grid; grid-template-columns: auto minmax(190px, 240px); align-items: center; gap: 7px; }
+.inventory-search span { color: var(--muted); font-size: 10px; font-weight: 700; }
+.inventory-search input { min-height: 30px; padding: 5px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 3px; font-size: 11px; }
+.inventory-note { display: grid; grid-template-columns: 100px 1fr; gap: 14px; margin: 10px 0; padding: 9px 12px; background: #f4f6f7; border-left: 3px solid var(--teal); }
+.inventory-note strong { color: var(--navy); font-size: 10px; }
+.inventory-note span { color: var(--muted); font-size: 10px; line-height: 1.6; }
+.inventory-table { min-width: 1140px; }
+.inventory-table tbody tr { cursor: default; }
+.inventory-table td { vertical-align: top; }
+.inventory-table td small { display: block; margin-top: 3px; color: var(--muted); }
+.inventory-table a { color: var(--teal-dark); }
+.inventory-status { display: inline-block; padding: 3px 6px; border-left: 3px solid; font-size: 9px; font-weight: 700; white-space: nowrap; }
+.inventory-status.scoring { color: var(--teal-dark); background: var(--teal-soft); border-color: var(--teal); }
+.inventory-status.display-only { color: #715b2c; background: #f3efe5; border-color: var(--mustard); }
+.inventory-sequence-button { padding: 3px 7px; color: var(--navy); background: transparent; border: 1px solid var(--line-strong); border-radius: 3px; font-size: 9px; font-weight: 700; }
+.inventory-sequence-viewer { margin-top: 12px; border-top: 2px solid var(--navy); border-bottom: 1px solid var(--line); }
+.inventory-sequence-viewer:empty { display: none; }
+.inventory-sequence-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; padding: 9px 12px; background: #f1f4f6; }
+.inventory-sequence-heading strong { color: var(--navy); font-size: 11px; }
+.inventory-sequence-heading span { color: var(--muted); font-size: 9px; }
+.inventory-sequence-viewer pre { max-height: 260px; margin: 0; padding: 12px; overflow: auto; color: var(--ink); background: var(--surface); font-family: "Cascadia Mono", Consolas, monospace; font-size: 10px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
 .statistics-layout { display: grid; grid-template-columns: minmax(540px, 1.15fr) minmax(400px, .85fr); gap: 28px; margin-top: 22px; }
 .statistics-panel { min-width: 0; }
 .coverage-chart { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 24px; }
@@ -642,6 +675,7 @@ dialog::backdrop { background: rgba(14, 28, 25, .55); }
   .scope-boundary-explainer { grid-template-columns: 1fr; }
   .scope-boundary-explainer div { border-right: 0; border-bottom: 1px solid var(--line); }
   .scope-boundary-explainer div:last-child { border-bottom: 0; }
+  .scope-decision-row { grid-template-columns: 210px minmax(220px, .8fr) minmax(300px, 1.4fr); }
 }
 
 @media (max-width: 640px) {
@@ -673,6 +707,8 @@ dialog::backdrop { background: rgba(14, 28, 25, .55); }
   .embedded-alignment { max-height: 620px; }
   .method-footer strong { margin-left: 0; width: 100%; }
   .statistics-heading { align-items: flex-start; flex-direction: column; }
+  .inventory-controls { width: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column; }
+  .inventory-search { grid-template-columns: 54px minmax(0, 1fr); }
   .statistics-key { justify-content: flex-start; }
   .methods-heading { align-items: flex-start; flex-direction: column; }
   .method-version { min-width: 0; }
@@ -698,6 +734,8 @@ dialog::backdrop { background: rgba(14, 28, 25, .55); }
   .scope-summary article, .scope-summary article:nth-child(3) { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .scope-summary article:nth-child(2n) { border-right: 0; }
   .scope-summary article:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
+  .scope-decision-row { grid-template-columns: 1fr; gap: 7px; padding: 12px; }
+  .inventory-note { grid-template-columns: 1fr; gap: 4px; }
   .ranking-controls { width: 100%; }
   .ranking-controls .compact-select { min-width: 0; flex: 1; }
   .definition-grid { grid-template-columns: 1fr; }

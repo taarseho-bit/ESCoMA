@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RiboVine｜ES保守性分析</title>
-  <link rel="stylesheet" href="styles.css?v=all-windows-scope-v1">
+  <link rel="stylesheet" href="styles.css?v=inventory-scope-v2">
 </head>
 <body>
   <header class="app-header">
@@ -86,6 +86,19 @@
 
       <section id="databaseLayerStats" class="database-layer-stats" aria-label="数据层级统计"></section>
 
+      <section class="inventory-section">
+        <div class="section-heading">
+          <div><h2>已获取的跨物种核 LSU 原始序列</h2><p id="inventoryStatus">正在读取版本化序列清单</p></div>
+          <div class="inventory-controls">
+            <div id="inventoryFilters" class="scope-filters" aria-label="物种范围筛选"></div>
+            <label class="inventory-search"><span>检索</span><input id="inventorySearch" type="search" placeholder="物种、类群或 accession"></label>
+          </div>
+        </div>
+        <div class="inventory-note"><strong>数据语义</strong><span>这里只列出已通过原始核 LSU 质量控制且真实存在的序列。哺乳动物可作为评分源；非哺乳动物完整保留并可查看原序列，但在逐 ES 同源定位和 MSA 完成前不参与任何得分。</span></div>
+        <div id="inventoryTable" class="table-scroll"></div>
+        <div id="inventorySequence" class="inventory-sequence-viewer" aria-live="polite"></div>
+      </section>
+
       <section class="statistics-layout">
         <article class="statistics-panel">
           <div class="section-heading compact-heading"><div><h2>各ES物种覆盖</h2><p>只显示有完整二维缓存的 ES</p></div></div>
@@ -125,6 +138,24 @@
         <div><strong>宿主螺旋全跨度</strong><span>结构定义，包含 ES 与连接核糖体核心的根部；用于展示和坐标核对，不能默认整段评分。</span></div>
         <div><strong>Parker 插入代理</strong><span>偏向演化插入的线性边界；与宿主螺旋跨度是两套定义，错位时必须重新提取和比对。</span></div>
         <div><strong>最终可评分掩膜</strong><span>还需扣除古老根螺旋、核心依赖配对和未冻结子臂。窗口必须完全落在掩膜内。</span></div>
+      </section>
+
+      <section class="scope-decision-map" aria-label="ES排除与预筛选名单">
+        <div class="scope-decision-row preliminary">
+          <strong>仅进入预筛选，尚不能作为最终候选</strong>
+          <span class="scope-es-list"><b>ES5L</b><b>ES7L</b><b>ES9L</b><b>ES15L</b><b>ES19L</b><b>ES20L</b><b>ES27L</b><b>ES39L</b></span>
+          <p>段内配对比例达到初步阈值 P<sub>intra</sub> ≥ 0.30，所以允许展示保守性窗口；但 8 个 ES 均未完成跨物种协方差模型出生节点判定，且部分最终非核心掩膜尚未冻结，因此当前只是候选预筛选，不是“已确认进化新增区”。</p>
+        </div>
+        <div class="scope-decision-row core-hold">
+          <strong>暂停评分：古老宿主螺旋或核心依赖配对风险</strong>
+          <span class="scope-es-list"><b>ES8L</b><b>ES10L</b><b>ES12L</b><b>ES13L</b><b>ES24L</b><b>ES26L</b><b>ES30L</b><b>ES31L</b><b>ES41L</b><b>ES43L</b><b>ES44L</b><b>ES45L</b></span>
+          <p>12 个 ES 的段内配对比例 P<sub>intra</sub> &lt; 0.30，并存在区外配对。当前边界可能主要覆盖宿主根螺旋或依赖核糖体核心的结构，若直接滑窗会把古老核心约束误当成 ES 局部保守性，因此只展示原始记录，不生成保守性、低熵或候选排名。</p>
+        </div>
+        <div class="scope-decision-row unresolved">
+          <strong>暂停评分：坐标轴或结构范围未决</strong>
+          <span class="scope-es-list"><b>ES3L</b><b>ES4L</b></span>
+          <p>ES3L 位于 5.8S；ES4L 横跨 5.8S 与 28S。当前分析使用人源成熟 28S 坐标轴和局部 28S 结构，不能在没有复合 LSU 坐标映射的情况下直接生成窗口。两者需先完成 5.8S/28S 联合定位与结构范围冻结。</p>
+        </div>
       </section>
 
       <section class="scope-table-section">
@@ -247,6 +278,6 @@
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <script src="app.js?v=all-windows-scope-v1"></script>
+  <script src="app.js?v=inventory-scope-v2"></script>
 </body>
 </html>

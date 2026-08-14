@@ -34,6 +34,10 @@
     librarySummary: null,
     databaseCatalog: null,
     provenanceCatalog: null,
+    lsuInventory: null,
+    inventoryFilter: "all",
+    inventoryQuery: "",
+    selectedInventoryAccession: null,
     allWindowsManifest: null,
     scopeFilter: "all",
     activeTab: "landscape",
@@ -256,6 +260,24 @@
       markStatisticsDirty();
     } catch (error) {
       console.warn("可追溯目录暂不可用", error);
+    }
+  }
+
+  async function loadCrossSpeciesInventory() {
+    try {
+      const response = await fetch("data/cross_species_lsu_inventory_v2.json?v=1.0.0-20260814");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      if (payload.schema_version !== "1.0.0" || !Array.isArray(payload.records)) {
+        throw new Error("跨物种LSU清单格式不完整");
+      }
+      state.lsuInventory = payload;
+      state.selectedInventoryAccession = payload.records[0]?.accession || null;
+      markStatisticsDirty();
+    } catch (error) {
+      const target = document.getElementById("inventoryStatus");
+      if (target) target.textContent = "跨物种LSU序列清单暂不可用";
+      console.warn("跨物种LSU清单暂不可用", error);
     }
   }
 
@@ -895,9 +917,97 @@
     renderEsCoverage(summary);
     renderSpeciesCoverage(summary);
     renderCoverageMatrix(summary);
+    renderLsuInventory();
     renderSourceTable();
     renderLiteratureTable();
     state.statisticsDirty = false;
+  }
+
+  function inventoryScope(record) {
+    if (record.species === "Homo sapiens") return "human";
+    return record.major_clade === "Mammalia" ? "mammal" : "nonmammal";
+  }
+
+  function formatSequence(sequence) {
+    const groups = String(sequence || "").match(/.{1,10}/g) || [];
+    const lines = [];
+    for (let index = 0; index < groups.length; index += 10) {
+      const start = index * 10 + 1;
+      lines.push(`${String(start).padStart(5, " ")}  ${groups.slice(index, index + 10).join(" ")}`);
+    }
+    return lines.join("\n");
+  }
+
+  function renderInventorySequence(record) {
+    const target = document.getElementById("inventorySequence");
+    if (!target) return;
+    if (!record) {
+      target.replaceChildren();
+      return;
+    }
+    target.innerHTML = `<div class="inventory-sequence-heading"><strong>${escapeHtml(record.species)} · ${escapeHtml(record.accession)}</strong><span>${record.sequence_length.toLocaleString()} nt · MD5 ${escapeHtml(record.sequence_md5)} · U替代T显示</span></div><pre>${escapeHtml(formatSequence(record.sequence))}</pre>`;
+  }
+
+  function renderLsuInventory() {
+    const payload = state.lsuInventory;
+    const tableTarget = document.getElementById("inventoryTable");
+    const statusTarget = document.getElementById("inventoryStatus");
+    const filterTarget = document.getElementById("inventoryFilters");
+    if (!payload || !tableTarget || !statusTarget || !filterTarget) return;
+
+    const counts = payload.records.reduce((result, record) => {
+      result[inventoryScope(record)] += 1;
+      return result;
+    }, { human: 0, mammal: 0, nonmammal: 0 });
+    const filters = [
+      ["all", `全部可用 ${payload.records.length}`],
+      ["mammal", `非人哺乳动物 ${counts.mammal}`],
+      ["nonmammal", `非哺乳动物 ${counts.nonmammal}`],
+      ["human", `人源LSU记录 ${counts.human}`]
+    ];
+    filterTarget.innerHTML = filters.map(([key, label]) =>
+      `<button type="button" data-inventory-filter="${key}" class="${state.inventoryFilter === key ? "active" : ""}">${label}</button>`
+    ).join("");
+    document.querySelectorAll("[data-inventory-filter]").forEach(button => button.addEventListener("click", () => {
+      state.inventoryFilter = button.dataset.inventoryFilter;
+      renderLsuInventory();
+    }));
+
+    const query = state.inventoryQuery.trim().toLocaleLowerCase();
+    const visible = payload.records.filter(record => {
+      const scope = inventoryScope(record);
+      if (state.inventoryFilter !== "all" && scope !== state.inventoryFilter) return false;
+      if (!query) return true;
+      return [record.species, record.major_clade, record.accession, record.taxid, record.source_database]
+        .some(value => String(value ?? "").toLocaleLowerCase().includes(query));
+    });
+    statusTarget.textContent = `${payload.surveyed_species} 个目标物种中 ${payload.available_sequence_records} 条真实核LSU通过QC并全部公开；当前显示 ${visible.length} 条。其余 ${payload.excluded_unavailable_records} 条没有合格序列，不以缺失值占位。`;
+
+    const rows = visible.map(record => {
+      const scope = inventoryScope(record);
+      const scoring = scope === "mammal";
+      const statusClass = scoring ? "scoring" : "display-only";
+      return `<tr>
+        <td><strong>${escapeHtml(record.species)}</strong><small>TaxID ${record.taxid ?? "未提供"}</small></td>
+        <td>${escapeHtml(record.major_clade)}</td>
+        <td><a href="${escapeHtml(record.source_url)}" target="_blank" rel="noopener">${escapeHtml(record.accession)}</a><small>${escapeHtml(record.source_database)}</small></td>
+        <td class="numeric">${record.sequence_length.toLocaleString()}</td>
+        <td><span class="inventory-status ${statusClass}">${escapeHtml(record.display_status)}</span></td>
+        <td>${escapeHtml(record.es_homology_status === "not_localized_raw_lsu_only" ? "ES局部待定位" : record.es_homology_status)}<small>${escapeHtml(record.msa_status === "not_built" ? "ES级MSA待构建" : record.msa_status)}</small></td>
+        <td>${escapeHtml(record.retrieval_date)}<small>MD5 ${escapeHtml(record.sequence_md5)}</small></td>
+        <td><button type="button" class="inventory-sequence-button" data-inventory-accession="${escapeHtml(record.accession)}">查看序列</button></td>
+      </tr>`;
+    }).join("");
+    tableTarget.innerHTML = `<table class="inventory-table"><thead><tr><th>物种</th><th>类群</th><th>来源记录</th><th class="numeric">长度 / nt</th><th>评分身份</th><th>ES处理状态</th><th>获取与校验</th><th>原始序列</th></tr></thead><tbody>${rows || '<tr><td colspan="8">当前筛选没有可用序列。</td></tr>'}</tbody></table>`;
+    document.querySelectorAll("[data-inventory-accession]").forEach(button => button.addEventListener("click", () => {
+      state.selectedInventoryAccession = button.dataset.inventoryAccession;
+      renderInventorySequence(payload.records.find(record => record.accession === state.selectedInventoryAccession));
+      document.getElementById("inventorySequence").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }));
+
+    const selected = visible.find(record => record.accession === state.selectedInventoryAccession) || visible[0];
+    state.selectedInventoryAccession = selected?.accession || null;
+    renderInventorySequence(selected);
   }
 
   function renderDatabaseLayers(summary) {
@@ -1125,6 +1235,10 @@
     document.getElementById("rankMetric").addEventListener("change", event => { state.rankMetric = event.target.value; analyze(); });
     document.getElementById("topNSelect").addEventListener("change", event => { state.topN = Number(event.target.value); analyze(); });
     document.getElementById("exportButton").addEventListener("click", exportCsv);
+    document.getElementById("inventorySearch").addEventListener("input", event => {
+      state.inventoryQuery = event.target.value;
+      renderLsuInventory();
+    });
     const addButton = document.getElementById("windowAddButton");
     const addMenu = document.getElementById("windowAddMenu");
     addButton.addEventListener("click", event => {
@@ -1212,6 +1326,7 @@
   loadLsuLibraryStatus();
   loadDatabaseCatalog();
   loadProvenanceCatalog();
+  loadCrossSpeciesInventory();
   loadHumanReferences()
     .then(() => Promise.all([loadBuiltInAllEsAlignments(), loadAllWindowManifest()]))
     .then(analyzeWithWindowCache)
