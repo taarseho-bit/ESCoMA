@@ -323,8 +323,7 @@
     const selectedSizes = new Set(analysisWindowSizes(humanMap.length));
     const results = (dataset.windows || []).filter(window =>
       selectedSizes.has(window.window_length) &&
-      [window.S_cons, window.order_coverage].every(Number.isFinite) &&
-      window.conservation_qc === "pass" && window.structure_gate_status === "pass"
+      [window.S_cons, window.order_coverage].every(Number.isFinite)
     ).map(window => {
       const columns = humanMap.alignmentColumns.slice(window.human_es_start - 1, window.human_es_end);
       return {
@@ -676,11 +675,28 @@
     }
 
     const seriesBySize = new Map();
+    const trackPath = (segment, key, top) => {
+      if (!segment.length) return "";
+      const first = segment[0];
+      const last = segment.at(-1);
+      const points = [
+        `M${x(first.humanStart - 1).toFixed(2)},${yTrack(first[key], top).toFixed(2)}`
+      ];
+      segment.forEach(datum => {
+        points.push(
+          `L${x((datum.humanStart + datum.humanEnd) / 2 - 1).toFixed(2)},${yTrack(datum[key], top).toFixed(2)}`
+        );
+      });
+      points.push(
+        `L${x(last.humanEnd - 1).toFixed(2)},${yTrack(last[key], top).toFixed(2)}`
+      );
+      return points.join(" ");
+    };
     visibleAnalysisSizes().forEach(size => {
       const series = state.results.filter(r => r.size === size).sort((a, b) => a.humanStart - b.humanStart);
       if (!series.length) return;
       seriesBySize.set(size, series);
-      const conservationPath = series.map((d, i) => `${i ? "L" : "M"}${x((d.humanStart + d.humanEnd) / 2 - 1).toFixed(2)},${yTrack(d.score, conservationTop).toFixed(2)}`).join(" ");
+      const conservationPath = trackPath(series, "score", conservationTop);
       svg.appendChild(svgEl("path", { d: conservationPath, class: "score-line", stroke: windowColor(size), "data-size": size }));
       const entropySeries = series.filter(item => Number.isFinite(item.lowEntropy));
       if (entropySeries.length) {
@@ -690,8 +706,8 @@
           if (!current || datum.humanStart !== current.at(-1).humanStart + 1) segments.push([datum]);
           else current.push(datum);
         });
-        segments.filter(segment => segment.length > 1).forEach(segment => {
-          const entropyPath = segment.map((d, i) => `${i ? "L" : "M"}${x((d.humanStart + d.humanEnd) / 2 - 1).toFixed(2)},${yTrack(d.lowEntropy, entropyTop).toFixed(2)}`).join(" ");
+        segments.forEach(segment => {
+          const entropyPath = trackPath(segment, "lowEntropy", entropyTop);
           svg.appendChild(svgEl("path", { d: entropyPath, class: "score-line", stroke: windowColor(size), "data-size": size, opacity: ".72" }));
         });
         entropySeries.forEach(d => svg.appendChild(svgEl("circle", {
@@ -763,20 +779,6 @@
     });
   }
 
-  function consensusForWindow(sequences, window) {
-    const consensus = [];
-    const support = [];
-    const nonhuman = sequences.filter(s => !/^Homo sapiens$/i.test(s.name));
-    for (const p of window.alignmentColumns) {
-      const counts = { A: 0, C: 0, G: 0, U: 0 };
-      nonhuman.forEach(s => { if (counts[s.sequence[p]] !== undefined) counts[s.sequence[p]]++; });
-      const [base, count] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-      consensus.push(count ? base : "-");
-      support.push(nonhuman.length ? count / nonhuman.length : 0);
-    }
-    return { consensus: consensus.join(""), support };
-  }
-
   function humanSequenceForWindow(sequences, window) {
     const human = findHumanSequence(sequences);
     return window.alignmentColumns.map(column => human.sequence[column]).join("");
@@ -817,15 +819,13 @@
     const focusPadding = 60;
     const sliceStart = state.alignmentMode === "focus" ? Math.max(0, window.start - focusPadding) : 0;
     const sliceEnd = state.alignmentMode === "focus" ? Math.min(alignmentLength, window.end + focusPadding + 1) : alignmentLength;
-    const displayColumns = Array.from({ length: sliceEnd - sliceStart }, (_, index) => sliceStart + index);
-    const displayConsensus = consensusForWindow(sequences, { alignmentColumns: displayColumns }).consensus;
-    const makeDetailedBases = (sequence, isConsensus = false, isHuman = false, sequenceIsSliced = false) => (sequenceIsSliced ? sequence : sequence.slice(sliceStart, sliceEnd)).split("").map((base, localIndex) => {
+    const displayHuman = human.sequence.slice(sliceStart, sliceEnd);
+    const makeDetailedBases = (sequence, isHuman = false) => sequence.slice(sliceStart, sliceEnd).split("").map((base, localIndex) => {
       const globalIndex = sliceStart + localIndex;
       const classes = ["base"];
-      if (isConsensus) classes.push("consensus");
       if (isHuman) classes.push("human-base");
       else if (base === "-") classes.push("gap");
-      else if (base !== displayConsensus[localIndex]) classes.push("mismatch");
+      else if (base !== displayHuman[localIndex]) classes.push("mismatch");
       if (globalIndex >= window.start && globalIndex <= window.end) classes.push("selected-base");
       return `<span class="${classes.join(" ")}">${base}</span>`;
     }).join("");
@@ -837,17 +837,16 @@
     };
     const makeBases = state.alignmentMode === "focus"
       ? makeDetailedBases
-      : (sequence, isConsensus = false, isHuman = false) => makeOverviewBases(
+      : (sequence, isHuman = false) => makeOverviewBases(
         sequence,
-        [isConsensus ? "consensus" : "", isHuman ? "human-base" : ""].filter(Boolean).join(" ")
+        isHuman ? "human-base" : ""
       );
     viewer.classList.toggle("alignment-overview", state.alignmentMode === "full");
     const rows = [
       state.alignmentMode === "focus"
         ? renderCoordinateRuler(human.sequence, alignmentLength, sliceStart, sliceEnd)
         : `<div class="alignment-row overview-ruler-row"><span class="alignment-label">MSA全长</span><span class="overview-range">1–${alignmentLength}列 · 选中 ${window.start + 1}–${window.end + 1}</span></div>`,
-      `<div class="alignment-row human-row"><a class="alignment-label source-anchor" href="${human.source_url || `https://www.ncbi.nlm.nih.gov/nuccore/${human.accession || "NR_003287.4"}`}" target="_blank" rel="noopener" title="打开 ${human.accession || "NR_003287.4"} 原始记录">Homo sapiens</a><span class="alignment-bases">${makeBases(human.sequence, false, true)}</span></div>`,
-      `<div class="alignment-row consensus-row"><span class="alignment-label">跨物种共识</span><span class="alignment-bases">${state.alignmentMode === "focus" ? makeDetailedBases(displayConsensus, true, false, true) : makeBases(displayConsensus, true)}</span></div>`
+      `<div class="alignment-row human-row"><a class="alignment-label source-anchor" href="${human.source_url || `https://www.ncbi.nlm.nih.gov/nuccore/${human.accession || "NR_003287.4"}`}" target="_blank" rel="noopener" title="打开 ${human.accession || "NR_003287.4"} 原始记录">Homo sapiens</a><span class="alignment-bases">${makeBases(human.sequence, true)}</span></div>`
     ];
     const conservation = cachedConstraintProfile(window.size, "score", alignmentLength);
     const lowEntropyColumns = cachedConstraintProfile(window.size, "lowEntropy", alignmentLength);
