@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RiboVine｜ES保守性分析</title>
-  <link rel="stylesheet" href="styles.css?v=perf-methods-v3">
+  <link rel="stylesheet" href="styles.css?v=all-windows-scope-v1">
 </head>
 <body>
   <header class="app-header">
@@ -35,15 +35,15 @@
     </section>
 
     <section class="analysis-scope-note" aria-label="评分适用范围">
-      <strong>评分边界</strong>
-      <span>仅在人源ES的进化新增、非核糖体核心区域生成窗口；古老宿主螺旋、核心依赖区和定位未决区仅展示，不进入保守性、结构低熵与候选排名。</span>
-      <span class="scope-rule">人源仅作坐标锚点</span>
+      <div><strong>当前 ES 边界判定</strong><span id="scopeCurrentSummary">正在读取 Human ES Reference v1.2</span></div>
+      <button id="openScopeTab" class="scope-detail-button" type="button">查看 22 个 ES 的纳入与排除依据</button>
     </section>
 
     <nav class="view-tabs" aria-label="分析视图">
       <button type="button" class="view-tab active" data-tab="landscape" aria-selected="true">景观分析</button>
       <button type="button" class="view-tab" data-tab="ranking" aria-selected="false">候选排行</button>
       <button type="button" class="view-tab" data-tab="statistics" aria-selected="false">数据总览</button>
+      <button type="button" class="view-tab" data-tab="scope" aria-selected="false">评分边界</button>
       <button type="button" class="view-tab" data-tab="methods" aria-selected="false">计算方法</button>
     </nav>
 
@@ -72,8 +72,8 @@
     <section id="rankingTab" class="tab-panel" hidden>
       <div class="ranking-workspace">
         <div class="ranking-section">
-          <div class="section-heading compact-heading"><div><h2>人源候选窗口排行</h2><p id="rankingMethodNote">结构低熵结果接入前，按目平衡保守性进行预排序；点击候选可返回景观查看</p></div><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div>
-          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">结构低熵</th><th class="numeric">目覆盖</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
+          <div class="section-heading compact-heading"><div><h2>人源候选窗口排行</h2><p id="rankingMethodNote">全部窗口按保守性预排序；完成低熵后可进入二维联合排行</p></div><div class="ranking-controls"><label class="compact-select"><span>排序依据</span><select id="rankMetric"><option value="auto">自动</option><option value="conservation">保守性</option><option value="low_entropy">结构低熵</option><option value="joint">联合分数</option></select></label><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div></div>
+          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">结构低熵</th><th class="numeric">联合分数</th><th class="numeric">目覆盖</th><th>计算状态</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -110,6 +110,31 @@
       <section class="source-section literature-section">
         <div class="section-heading"><div><h2>文献与结构证据</h2><p>用于核对 ES 命名、边界和跨物种结构；文献证据不自动等同于已完成序列定位</p></div></div>
         <div id="literatureTable" class="table-scroll"></div>
+      </section>
+    </section>
+
+    <section id="scopeTab" class="tab-panel scope-tab" hidden>
+      <section class="scope-heading">
+        <div><span class="eyebrow">Human ES Reference v1.2 · 评分资格审计</span><h2>22 个 ES 的纳入、暂停与未决依据</h2><p>结构门通过不等于已经证明“进化新增”。当前所有 ES 的出生节点仍待跨物种协方差模型分析，因此下面的 8 个 ES 仅进入候选预筛选。</p></div>
+        <div class="scope-version"><span>严格边界原则</span><strong>先冻结区间，再生成窗口</strong><small>宿主螺旋、核心依赖区和未决区不进入排名</small></div>
+      </section>
+
+      <section id="scopeSummary" class="scope-summary" aria-label="ES评分资格统计"></section>
+
+      <section class="scope-boundary-explainer">
+        <div><strong>宿主螺旋全跨度</strong><span>结构定义，包含 ES 与连接核糖体核心的根部；用于展示和坐标核对，不能默认整段评分。</span></div>
+        <div><strong>Parker 插入代理</strong><span>偏向演化插入的线性边界；与宿主螺旋跨度是两套定义，错位时必须重新提取和比对。</span></div>
+        <div><strong>最终可评分掩膜</strong><span>还需扣除古老根螺旋、核心依赖配对和未冻结子臂。窗口必须完全落在掩膜内。</span></div>
+      </section>
+
+      <section class="scope-table-section">
+        <div class="section-heading compact-heading"><div><h2>逐 ES 判定表</h2><p>点击筛选查看对应类别；坐标均为人源成熟 rRNA 参考坐标</p></div><div id="scopeFilters" class="scope-filters" aria-label="边界状态筛选"></div></div>
+        <div id="scopeTable" class="table-scroll"></div>
+      </section>
+
+      <section class="scope-caveat">
+        <strong>当前必须保留的限制</strong>
+        <p>ES7L、ES15L 和 ES27L 的部分子臂边界尚未冻结；ES9L、ES15L、ES19L、ES20L、ES27L、ES39L 的 Parker 代理区间超出当前宿主跨度缓存的一端，切换为该边界后需要重新提取相应序列并重建 MSA，不能只裁剪旧结果。</p>
       </section>
     </section>
 
@@ -222,6 +247,6 @@
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <script src="app.js?v=evoes-v2.3"></script>
+  <script src="app.js?v=all-windows-scope-v1"></script>
 </body>
 </html>

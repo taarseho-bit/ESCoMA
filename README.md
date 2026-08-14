@@ -16,8 +16,9 @@ run in the browser.
 - MAFFT E-INS-i (`--genafpair --maxiterate 1000 --ep 0`)
 
 Only nonhuman mammals contribute to scores. Human defines ES and mature-28S
-coordinates. Records with unresolved localization or missing required scores are
-not shown and are never converted to zero.
+coordinates. Records with unresolved localization remain visible as
+reference-only entries. They do not contribute to scores, and missing values are
+never converted to zero.
 
 ## EvoES v2.0 scoring
 
@@ -42,8 +43,15 @@ is:
 S_joint = sqrt(S_cons * S_LE)
 ```
 
-The page shows only complete representative peaks with both scores, all coverage
-fields, structure gate results, and null-model metadata present.
+The page lazily loads all 8,026 valid step-1 conservation windows from
+`data/windows/<ES>.json`. The 30 windows that have completed the `B=500` GPU
+null model also expose `S_LE` and `S_joint`; other windows are explicitly marked
+as conservation-only while background checkpoints continue.
+
+The scoring-boundary view keeps all 22 human ES records visible and separates
+8 preliminary candidates, 12 core-pairing holds, and 2 unresolved coordinate or
+structure scopes. No ES is labeled as a confirmed evolutionary birth event:
+the deep covariance-model birth-node gate remains pending.
 
 ## Rebuild
 
@@ -54,5 +62,7 @@ The reproducible offline steps live outside the static site:
 - `../scripts/compute_evoes_null_cache.py`
 - `../scripts/compute_evoes_gpu_cache.py`
 - `../scripts/publish_evoes_checkpoints.py`
+- `../scripts/publish_evoes_all_windows.py`
 
-The browser-ready cache is `data/evoes_static_cache_v2.json`.
+The representative cache is `data/evoes_static_cache_v2.json`; the all-window
+manifest is `data/windows/manifest.json`.

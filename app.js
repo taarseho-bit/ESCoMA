@@ -25,6 +25,7 @@
     selectedWindows: new Set([20]),
     visibleSeries: new Set([20]),
     rankMode: "peaks",
+    rankMetric: "auto",
     topN: 20,
     results: [],
     selected: null,
@@ -33,11 +34,42 @@
     librarySummary: null,
     databaseCatalog: null,
     provenanceCatalog: null,
+    allWindowsManifest: null,
+    scopeFilter: "all",
     activeTab: "landscape",
     alignmentMode: "focus",
     alignmentRenderKey: null,
     statisticsDirty: true
   };
+
+  const SCOPE_LABELS = {
+    preliminary: { label: "候选预筛选", short: "预筛选", className: "preliminary" },
+    core_hold: { label: "核心配对风险暂停", short: "核心风险", className: "core-hold" },
+    unresolved: { label: "坐标或结构范围未决", short: "定位未决", className: "unresolved" }
+  };
+
+  const SUBARM_WARNINGS = {
+    ES7L: "ES7L-a/b/c-h 的精确人源子臂边界尚未全部冻结。",
+    ES15L: "ES15L-A 名称已有文献依据，但当前参考坐标尚未冻结。",
+    ES27L: "ES27L-a/c 边界未冻结；ES27L-b 的文献区间坐标轴仍待与 NR_003287.4 核对。"
+  };
+
+  function scopeClassFor(record) {
+    if (record.screening_status === "manual_review_coordinate_and_structure_scope") return "unresolved";
+    if (record.screening_status === "hold_at_preliminary_structure_gate") return "core_hold";
+    return "preliminary";
+  }
+
+  function populateEsSelect() {
+    const select = document.getElementById("esSelect");
+    select.replaceChildren();
+    (state.humanReferencePayload?.records ?? []).forEach(record => {
+      const scope = SCOPE_LABELS[scopeClassFor(record)];
+      const cached = state.datasets[record.es_id]?.analysisReady ? " · 有跨物种缓存" : "";
+      select.add(new Option(`${record.es_id} · ${record.length_nt} nt · ${scope.short}${cached}`, record.es_id));
+    });
+    select.value = state.currentEs;
+  }
 
   function createHumanReferenceDataset(record) {
     return {
@@ -61,15 +93,13 @@
     if (!response.ok) throw new Error(`人源参考数据载入失败（HTTP ${response.status}）`);
     const payload = await response.json();
     if (!Array.isArray(payload.records) || payload.records.length !== 22) throw new Error("人源参考数据应包含22条ES记录。");
-    const select = document.getElementById("esSelect");
     state.humanReferencePayload = payload;
-    select.replaceChildren();
     payload.records.forEach(record => {
       state.datasets[record.es_id] = createHumanReferenceDataset(record);
-      select.add(new Option(`${record.es_id} · ${record.length_nt} nt · ${record.molecule}`, record.es_id));
     });
     state.currentEs = state.datasets.ES27L ? "ES27L" : payload.records[0].es_id;
-    select.value = state.currentEs;
+    populateEsSelect();
+    renderScopeCurrent();
   }
 
   async function loadBuiltInAllEsAlignments() {
@@ -96,23 +126,70 @@
         ...dataset,
         dataScope: dataset.data_scope,
         analysisReady: dataset.analysis_ready,
-        humanCoordinateOffset: dataset.human_coordinate_offset
+        humanCoordinateOffset: dataset.human_coordinate_offset,
+        representativeWindows: dataset.windows,
+        allWindowsLoaded: false
       };
     });
     const availableIds = new Set(Object.keys(payload.datasets));
-    const select = document.getElementById("esSelect");
-    select.replaceChildren();
-    state.humanReferencePayload.records.filter(record => availableIds.has(record.es_id)).forEach(record => {
-      select.add(new Option(`${record.es_id} · ${record.length_nt} nt · 完整缓存`, record.es_id));
-    });
     const preferredEs = availableIds.has("ES27L") && payload.datasets.ES27L.windows.length
       ? "ES27L"
       : Object.entries(payload.datasets).find(([, dataset]) => dataset.windows.length)?.[0];
     state.currentEs = preferredEs || [...availableIds][0];
-    select.value = state.currentEs;
+    populateEsSelect();
     state.staticCache = payload;
     state.allEsSummary = buildStaticSummary(payload);
     markStatisticsDirty();
+  }
+
+  async function loadAllWindowManifest() {
+    const response = await fetch("data/windows/manifest.json?v=1.0.0-20260814");
+    if (!response.ok) throw new Error(`全滑窗索引载入失败（HTTP ${response.status}）`);
+    const manifest = await response.json();
+    if (manifest.schema_version !== "1.0.0" || !manifest.datasets || manifest.step_nt !== 1) {
+      throw new Error("全滑窗索引未通过版本或步长检查。");
+    }
+    state.allWindowsManifest = manifest;
+    markStatisticsDirty();
+  }
+
+  async function ensureAllWindowsLoaded(esId) {
+    const dataset = state.datasets[esId];
+    const entry = state.allWindowsManifest?.datasets?.[esId];
+    if (!dataset?.analysisReady || !entry || dataset.allWindowsLoaded) return;
+    document.getElementById("analysisStatus").textContent = `正在载入 ${entry.window_count.toLocaleString()} 个逐 1 nt 窗口`;
+    const response = await fetch(`data/${entry.file}?v=1.0.0-20260814`);
+    if (!response.ok) throw new Error(`${esId}全滑窗载入失败（HTTP ${response.status}）`);
+    const payload = await response.json();
+    if (payload.es_id !== esId || payload.window_count !== entry.window_count || !Array.isArray(payload.windows)) {
+      throw new Error(`${esId}全滑窗缓存未通过完整性检查。`);
+    }
+    dataset.windows = payload.windows;
+    dataset.allWindowsLoaded = true;
+    dataset.summary = {
+      ...dataset.summary,
+      all_window_count: payload.window_count,
+      complete_window_count: payload.complete_low_entropy_windows,
+      planned_window_count: payload.window_count,
+      step_nt: payload.step_nt
+    };
+  }
+
+  async function analyzeWithWindowCache() {
+    const esId = state.currentEs;
+    const dataset = state.datasets[esId];
+    renderScopeCurrent();
+    if (!dataset?.analysisReady) {
+      analyze();
+      return;
+    }
+    try {
+      await ensureAllWindowsLoaded(esId);
+      if (state.currentEs === esId) analyze();
+    } catch (error) {
+      document.getElementById("analysisStatus").textContent = error.message;
+      console.error(error);
+    }
   }
 
   function buildStaticSummary(payload) {
@@ -221,7 +298,7 @@
     const selectedSizes = new Set(analysisWindowSizes(humanMap.length));
     const results = (dataset.windows || []).filter(window =>
       selectedSizes.has(window.window_length) &&
-      [window.S_cons, window.S_LE, window.S_joint, window.order_coverage].every(Number.isFinite) &&
+      [window.S_cons, window.order_coverage].every(Number.isFinite) &&
       window.conservation_qc === "pass" && window.structure_gate_status === "pass"
     ).map(window => {
       const columns = humanMap.alignmentColumns.slice(window.human_es_start - 1, window.human_es_end);
@@ -234,9 +311,10 @@
         humanStart: window.human_es_start,
         humanEnd: window.human_es_end,
         score: window.S_cons,
-        lowEntropy: window.S_LE,
+        lowEntropy: Number.isFinite(window.S_LE) ? window.S_LE : null,
         coverage: window.order_coverage,
-        jointScore: window.S_joint
+        jointScore: Number.isFinite(window.S_joint) ? window.S_joint : null,
+        scoreStatus: Number.isFinite(window.S_LE) && Number.isFinite(window.S_joint) ? "complete_b500" : "conservation_only"
       };
     });
     state.results = results;
@@ -253,10 +331,19 @@
   function getRankedResults(results) {
     const passing = results.filter(item =>
       item.conservation_qc === "pass" && item.structure_gate_status === "pass" &&
-      [item.score, item.lowEntropy, item.jointScore, item.coverage].every(Number.isFinite)
+      [item.score, item.coverage].every(Number.isFinite)
     );
-    const sorted = [...passing].sort((a, b) => {
-      return b.jointScore - a.jointScore || b.score - a.score || b.lowEntropy - a.lowEntropy || a.size - b.size || a.start - b.start;
+    const metric = state.rankMetric === "auto"
+      ? (state.rankMode === "peaks" ? "joint" : "conservation")
+      : state.rankMetric;
+    const eligible = passing.filter(item => {
+      if (metric === "joint") return Number.isFinite(item.jointScore);
+      if (metric === "low_entropy") return Number.isFinite(item.lowEntropy);
+      return true;
+    });
+    const valueFor = item => metric === "joint" ? item.jointScore : metric === "low_entropy" ? item.lowEntropy : item.score;
+    const sorted = [...eligible].sort((a, b) => {
+      return valueFor(b) - valueFor(a) || b.score - a.score || (b.lowEntropy ?? -1) - (a.lowEntropy ?? -1) || a.size - b.size || a.start - b.start;
     });
     if (state.rankMode === "all") return sorted;
     const accepted = [];
@@ -293,14 +380,15 @@
     document.getElementById("datasetLabel").textContent = dataset.label;
     document.getElementById("speciesCount").textContent = `${dataset.summary?.scoring_species ?? sequences.length - 1}计分 / ${sequences.length}展示`;
     document.getElementById("alignmentLength").textContent = `${humanLength} nt`;
-    const completeWindows = dataset.summary?.complete_window_count ?? dataset.windows?.length ?? 0;
-    const plannedWindows = dataset.summary?.planned_window_count ?? completeWindows;
-    document.getElementById("analysisStatus").textContent = completeWindows === plannedWindows
-      ? `已载入 ${completeWindows} 个完整离线窗口`
-      : `已载入 ${completeWindows}/${plannedWindows} 个完整窗口`;
+    const allWindows = dataset.summary?.all_window_count ?? dataset.windows?.length ?? 0;
+    const completeWindows = dataset.summary?.complete_window_count ?? 0;
+    document.getElementById("analysisStatus").textContent = `已载入 ${allWindows.toLocaleString()} 个逐 1 nt 窗口 · ${completeWindows} 个完成低熵`;
     document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA分区函数 + 二核苷酸零模型';
     document.getElementById("dataNotice").textContent = `离线E-INS-i缓存；人源不计分；${dataset.summary?.scoring_species ?? sequences.length - 1}种非人哺乳动物按目等权`;
-    document.getElementById("rankingMethodNote").textContent = "仅显示完成B=500零模型与全部质控的代表峰；按几何平均排序，缺失记录不进入页面";
+    const metric = state.rankMetric === "auto" ? (state.rankMode === "peaks" ? "联合分数" : "保守性") : ({ conservation: "保守性", low_entropy: "结构低熵", joint: "联合分数" }[state.rankMetric]);
+    document.getElementById("rankingMethodNote").textContent = state.rankMode === "all"
+      ? `显示全部已完成保守性与质控的逐 1 nt 窗口，当前按${metric}排序；低熵待计算者显示为“—”`
+      : `将重叠至少 10 nt 的窗口合并为代表峰，当前按${metric}选峰；联合排行只纳入已完成 B=500 的窗口`;
     renderSummary(state.selected, dataset.summary?.scoring_species ?? sequences.length - 1);
     renderLegend();
     renderTaxonLegend(sequences);
@@ -318,6 +406,7 @@
       state.visibleSeries.add(20);
     }
     document.getElementById("rankMode").disabled = referenceOnly;
+    document.getElementById("rankMetric").disabled = referenceOnly;
     document.getElementById("exportButton").disabled = referenceOnly;
     renderWindowPicker(humanLength, referenceOnly);
   }
@@ -328,6 +417,7 @@
     document.getElementById("speciesCount").textContent = "1（人源）";
     document.getElementById("alignmentLength").textContent = `${humanLength} nt`;
     document.getElementById("analysisStatus").textContent = "跨物种MSA待构建";
+    document.getElementById("rankingMethodNote").textContent = `${SCOPE_LABELS[scopeClassFor(meta)].label}：${scopeAction(meta)}`;
     document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>低熵 = 待同源定位与MSA后计算';
     document.getElementById("dataNotice").textContent = "人源真实参考；保守性与低熵不从单序列推断";
     document.getElementById("topCoordinates").textContent = `1–${humanLength}`;
@@ -395,7 +485,7 @@
   }
 
   function renderReferenceRanking() {
-    document.getElementById("rankingBody").innerHTML = '<tr class="empty-ranking"><td colspan="8"><strong>尚无完整二维窗口排行</strong><span>未完成跨物种定位或结构零模型的ES不显示缺失值。</span></td></tr>';
+    document.getElementById("rankingBody").innerHTML = '<tr class="empty-ranking"><td colspan="10"><strong>当前 ES 仅展示人源参考</strong><span>边界或结构门未通过的 ES 不生成保守性、低熵和候选排行窗口。</span></td></tr>';
   }
 
   function renderSummary(top, speciesCount) {
@@ -486,6 +576,22 @@
     return el;
   }
 
+  function nearestWindow(series, coordinate) {
+    if (!series.length) return null;
+    let low = 0;
+    let high = series.length - 1;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      const center = (series[middle].humanStart + series[middle].humanEnd) / 2 - 1;
+      if (center < coordinate) low = middle + 1;
+      else high = middle;
+    }
+    const before = series[Math.max(0, low - 1)];
+    const after = series[low];
+    const distance = item => Math.abs(((item.humanStart + item.humanEnd) / 2 - 1) - coordinate);
+    return distance(before) <= distance(after) ? before : after;
+  }
+
   function renderChart(length) {
     const wrap = document.getElementById("chart");
     const width = Math.max(320, wrap.clientWidth || 900);
@@ -543,15 +649,13 @@
       svg.appendChild(peak);
     }
 
+    const seriesBySize = new Map();
     visibleAnalysisSizes().forEach(size => {
       const series = state.results.filter(r => r.size === size).sort((a, b) => a.humanStart - b.humanStart);
       if (!series.length) return;
+      seriesBySize.set(size, series);
       const conservationPath = series.map((d, i) => `${i ? "L" : "M"}${x((d.humanStart + d.humanEnd) / 2 - 1).toFixed(2)},${yTrack(d.score, conservationTop).toFixed(2)}`).join(" ");
       svg.appendChild(svgEl("path", { d: conservationPath, class: "score-line", stroke: windowColor(size), "data-size": size }));
-      series.forEach(d => svg.appendChild(svgEl("circle", {
-        cx: x((d.humanStart + d.humanEnd) / 2 - 1), cy: yTrack(d.score, conservationTop), r: 3.2,
-        class: "score-point", fill: windowColor(size)
-      })));
       const entropySeries = series.filter(item => Number.isFinite(item.lowEntropy));
       if (entropySeries.length) {
         const entropyPath = entropySeries.map((d, i) => `${i ? "L" : "M"}${x((d.humanStart + d.humanEnd) / 2 - 1).toFixed(2)},${yTrack(d.lowEntropy, entropyTop).toFixed(2)}`).join(" ");
@@ -564,7 +668,7 @@
     });
     if (!hasLowEntropy) {
       const pending = svgEl("text", { x: margin.left + plotW / 2, y: entropyTop + trackH / 2, "text-anchor": "middle", class: "pending-label" });
-      pending.textContent = "当前窗口长度没有完整二维缓存候选";
+      pending.textContent = "全窗口保守性已载入；结构低熵正在本地补算";
       svg.appendChild(pending);
     }
 
@@ -577,10 +681,9 @@
       const localX = (event.clientX - rect.left) * width / rect.width;
       const coordinate = Math.max(0, Math.min(length - 1, Math.round((localX - margin.left) / plotW * (length - 1))));
       hoverLine.setAttribute("x1", x(coordinate)); hoverLine.setAttribute("x2", x(coordinate)); hoverLine.setAttribute("visibility", "visible");
-      const rows = visibleAnalysisSizes().map(size => {
-        const series = state.results.filter(r => r.size === size);
-        const datum = series.reduce((best, current) => Math.abs(((current.humanStart + current.humanEnd) / 2 - 1) - coordinate) < Math.abs(((best.humanStart + best.humanEnd) / 2 - 1) - coordinate) ? current : best, series[0]);
-        return `<span style="color:${windowColor(size)}">●</span> ${size} nt：保守性 <strong>${scoreFmt(datum.score)}</strong> · 结构低熵 ${scoreFmt(datum.lowEntropy)}`;
+      const rows = [...seriesBySize.entries()].map(([size, series]) => {
+        const datum = nearestWindow(series, coordinate);
+        return `<span style="color:${windowColor(size)}">●</span> ${size} nt：ES ${humanCoordinateText(datum)} · 保守性 <strong>${scoreFmt(datum.score)}</strong> · 结构低熵 ${scoreFmt(datum.lowEntropy)}`;
       });
       tooltip.innerHTML = `<strong>人源ES位置 ${coordinate + 1}</strong><br>${rows.join("<br>")}`;
       tooltip.hidden = false; tooltip.style.left = `${Math.min(window.innerWidth - 280, event.clientX + 14)}px`; tooltip.style.top = `${Math.max(8, event.clientY - 26)}px`;
@@ -594,7 +697,7 @@
     const body = document.getElementById("rankingBody");
     body.innerHTML = "";
     if (!rows.length) {
-      body.innerHTML = '<tr class="empty-ranking"><td colspan="8"><strong>当前窗口长度没有完整缓存候选</strong><span>未完成结构零模型、低覆盖或结构门控未通过的记录不会显示。</span></td></tr>';
+      body.innerHTML = '<tr class="empty-ranking"><td colspan="10"><strong>当前筛选条件没有可排序窗口</strong><span>联合分数和结构低熵排序只纳入已完成 B=500 零模型的窗口。</span></td></tr>';
       return;
     }
     rows.forEach((row, index) => {
@@ -609,7 +712,9 @@
         <td>${humanAbsoluteCoordinateText(row)}</td>
         <td class="numeric score-cell">${scoreFmt(row.score)}</td>
         <td class="numeric">${scoreFmt(row.lowEntropy)}</td>
+        <td class="numeric">${scoreFmt(row.jointScore)}</td>
         <td class="numeric">${pct(row.coverage)}</td>
+        <td><span class="calculation-status ${row.scoreStatus === "complete_b500" ? "complete" : "pending"}">${row.scoreStatus === "complete_b500" ? "B=500 完成" : "低熵待计算"}</span></td>
         <td><code>${humanSequence}</code></td>`;
       tr.addEventListener("click", () => {
         state.selected = row;
@@ -807,6 +912,8 @@
     const lsuPass = state.librarySummary?.combined_fasta_records ?? 79;
     const panel = state.librarySummary?.panel_species ?? 135;
     const layers = [
+      { value: Number(state.allWindowsManifest?.total_windows ?? 0).toLocaleString(), label: "逐1 nt滑窗", context: "8个ES · 20/30/40/50 nt · 保守性已缓存" },
+      { value: `${state.allWindowsManifest?.complete_low_entropy_windows ?? 0}/${state.allWindowsManifest?.total_windows ?? 0}`, label: "B=500低熵进度", context: "RNAstructure CUDA · 本地持续补算" },
       { value: silvaCount.toLocaleString(), label: "SILVA LSU底库", context: "全量参考序列 · 已校验MD5" },
       { value: rfamCount.toLocaleString(), label: "Rfam RF02543", context: "2,616物种 · 结构感知模型" },
       { value: rodCount.toLocaleString(), label: "ROD完整operon", context: "11,935个基因组 · 已下载校验" },
@@ -896,37 +1003,126 @@
     </tr>`).join("")}</tbody></table>`;
   }
 
-  function openEsLandscape(esId) {
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
+  }
+
+  function scopeReason(record) {
+    const scopeClass = scopeClassFor(record);
+    if (scopeClass === "unresolved") {
+      return record.es_id === "ES4L"
+        ? "区间横跨 5.8S 与 28S 两个分子坐标轴，缺少可直接比较的单一 28S 结构范围。"
+        : "区间位于 5.8S，当前没有可与 28S 局部 R2DT 直接比较的结构范围。";
+    }
+    const paired = Number.isFinite(record.paired_fraction_intrasegment)
+      ? `${(record.paired_fraction_intrasegment * 100).toFixed(1)}%`
+      : "未定";
+    if (scopeClass === "core_hold") {
+      return `段内配对比例 ${paired}，未达到 0.30 初步结构门；另有 ${record.external_pair_count ?? "未定"} 个区外配对，存在古老宿主螺旋或核心依赖风险。`;
+    }
+    const warning = SUBARM_WARNINGS[record.es_id] ? ` ${SUBARM_WARNINGS[record.es_id]}` : "";
+    return `段内配对比例 ${paired}，初步结构门通过；但出生节点仍待跨物种 CM 分析，因此只进入候选预筛选。${warning}`;
+  }
+
+  function scopeAction(record) {
+    const scopeClass = scopeClassFor(record);
+    if (scopeClass === "unresolved") return "仅展示。先统一坐标轴并冻结结构范围，再决定是否生成窗口。";
+    if (scopeClass === "core_hold") return "仅展示，不生成保守性、低熵或候选排名窗口。";
+    return "已有逐 1 nt 保守性窗口可展示；最终排名前需冻结非核心掩膜并补齐 B=500 低熵。";
+  }
+
+  function renderScopeCurrent() {
+    const target = document.getElementById("scopeCurrentSummary");
+    const record = state.datasets[state.currentEs]?.metadata;
+    if (!target || !record) return;
+    const scope = SCOPE_LABELS[scopeClassFor(record)];
+    target.innerHTML = `<b class="scope-inline-status ${scope.className}">${scope.label}</b><span>${escapeHtml(scopeReason(record))}</span>`;
+  }
+
+  function renderScopePage() {
+    const records = state.humanReferencePayload?.records ?? [];
+    if (!records.length) return;
+    const counts = records.reduce((result, record) => {
+      result[scopeClassFor(record)] += 1;
+      return result;
+    }, { preliminary: 0, core_hold: 0, unresolved: 0 });
+    document.getElementById("scopeSummary").innerHTML = `
+      <article><span>人源 ES 总数</span><strong>${records.length}</strong><small>全部保留在页面中</small></article>
+      <article class="preliminary"><span>候选预筛选</span><strong>${counts.preliminary}</strong><small>结构门通过，出生节点待验证</small></article>
+      <article class="core-hold"><span>核心配对风险暂停</span><strong>${counts.core_hold}</strong><small>仅展示，不生成窗口</small></article>
+      <article class="unresolved"><span>坐标或结构未决</span><strong>${counts.unresolved}</strong><small>先完成范围复核</small></article>
+      <article class="birth-pending"><span>出生节点已确认</span><strong>0</strong><small>22 个均待跨物种 CM 分析</small></article>`;
+
+    const filters = [
+      ["all", `全部 ${records.length}`],
+      ["preliminary", `预筛选 ${counts.preliminary}`],
+      ["core_hold", `核心风险 ${counts.core_hold}`],
+      ["unresolved", `定位未决 ${counts.unresolved}`]
+    ];
+    document.getElementById("scopeFilters").innerHTML = filters.map(([key, label]) =>
+      `<button type="button" data-scope-filter="${key}" class="${state.scopeFilter === key ? "active" : ""}">${label}</button>`
+    ).join("");
+    document.querySelectorAll("[data-scope-filter]").forEach(button => button.addEventListener("click", () => {
+      state.scopeFilter = button.dataset.scopeFilter;
+      renderScopePage();
+    }));
+
+    const visible = records.filter(record => state.scopeFilter === "all" || scopeClassFor(record) === state.scopeFilter);
+    const rows = visible.map(record => {
+      const scope = SCOPE_LABELS[scopeClassFor(record)];
+      const secondary = Number.isFinite(record.secondary_current_start_incl)
+        ? `28S:${record.secondary_current_start_incl}–${record.secondary_current_end_incl}`
+        : "未提供";
+      const literature = String(record.literature_support || "").split(";").map(item => item.trim()).filter(Boolean);
+      const links = [
+        `<a href="https://www.ncbi.nlm.nih.gov/nuccore/${encodeURIComponent(record.ref_accession)}" target="_blank" rel="noopener">${escapeHtml(record.ref_accession)}</a>`,
+        ...literature.slice(0, 2).map((url, index) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">文献 ${index + 1}</a>`)
+      ].join("");
+      return `<tr>
+        <td><span class="scope-status ${scope.className}">${scope.label}</span></td>
+        <td><button type="button" class="scope-es-link" data-scope-es="${record.es_id}">${record.es_id}</button><small>${escapeHtml(record.host_helix)} · ${record.length_nt} nt</small></td>
+        <td>${escapeHtml(record.component_coordinates || "未冻结")}<small>宿主螺旋全跨度</small></td>
+        <td>${secondary}<small>${Number.isFinite(record.primary_vs_secondary_length_delta_nt) ? `与全跨度长度差 ${record.primary_vs_secondary_length_delta_nt > 0 ? "+" : ""}${record.primary_vs_secondary_length_delta_nt} nt` : "无 Parker 插入代理"}</small></td>
+        <td>${escapeHtml(scopeReason(record))}</td>
+        <td>${escapeHtml(scopeAction(record))}<span class="scope-source-links">${links}</span></td>
+      </tr>`;
+    }).join("");
+    document.getElementById("scopeTable").innerHTML = `<table class="scope-decision-table"><thead><tr><th>当前状态</th><th>ES / 宿主螺旋</th><th>结构全跨度</th><th>插入代理边界</th><th>为什么这样判定</th><th>当前处理与来源</th></tr></thead><tbody>${rows}</tbody></table>`;
+    document.querySelectorAll("[data-scope-es]").forEach(button => button.addEventListener("click", () => openEsLandscape(button.dataset.scopeEs)));
+  }
+
+  async function openEsLandscape(esId) {
     if (!state.datasets[esId]) return;
     state.currentEs = esId;
     document.getElementById("esSelect").value = esId;
     document.querySelector('.view-tab[data-tab="landscape"]').click();
-    analyze();
+    await analyzeWithWindowCache();
     window.scrollTo({ top: document.querySelector(".view-tabs").offsetTop - 12, behavior: "smooth" });
   }
 
   function exportCsv() {
     const ranked = getRankedResults(state.results).slice(0, state.topN);
     const sequences = state.datasets[state.currentEs].sequences;
-    const lines = [["rank", "ES", "window_nt", "es_start_1based", "es_end_1based", "human_28s_start_1based", "human_28s_end_1based", "alignment_start_1based", "alignment_end_1based", "S_cons", "S_LE", "S_joint", "order_coverage", "callable_species", "callable_orders", "delta_LOO", "P_intra", "P_external", "null_B", "pareto_status", "priority_class", "human_sequence"]];
+    const lines = [["rank", "ES", "window_nt", "es_start_1based", "es_end_1based", "human_28s_start_1based", "human_28s_end_1based", "alignment_start_1based", "alignment_end_1based", "S_cons", "S_LE", "S_joint", "score_status", "order_coverage", "callable_species", "callable_orders", "delta_LOO", "P_intra", "P_external", "null_B", "pareto_status", "priority_class", "human_sequence"]];
     ranked.forEach((row, index) => {
       const humanSequence = humanSequenceForWindow(sequences, row);
       const offset = state.datasets[state.currentEs]?.humanCoordinateOffset ?? 0;
-      lines.push([index + 1, state.currentEs, row.size, row.humanStart, row.humanEnd, offset ? offset + row.humanStart : "", offset ? offset + row.humanEnd : "", row.start + 1, row.end + 1, row.score.toFixed(6), row.lowEntropy.toFixed(6), row.jointScore.toFixed(6), row.coverage.toFixed(6), row.n_species_callable, row.n_orders_callable, row.delta_LOO, row.P_intra, row.P_external, row.null_B, row.pareto_status, row.priority_class, humanSequence]);
+      lines.push([index + 1, state.currentEs, row.size, row.humanStart, row.humanEnd, offset ? offset + row.humanStart : "", offset ? offset + row.humanEnd : "", row.start + 1, row.end + 1, row.score.toFixed(6), Number.isFinite(row.lowEntropy) ? row.lowEntropy.toFixed(6) : "", Number.isFinite(row.jointScore) ? row.jointScore.toFixed(6) : "", row.scoreStatus, row.coverage.toFixed(6), row.n_species_callable, row.n_orders_callable, row.delta_LOO, row.P_intra, row.P_external, row.null_B ?? "", row.pareto_status ?? "", row.priority_class ?? "", humanSequence]);
     });
     const csv = lines.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${state.currentEs}_evoes_complete_cached_ranking.csv`;
+    link.download = `${state.currentEs}_evoes_${state.rankMode}_${state.rankMetric}_ranking.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
   function bindEvents() {
-    document.getElementById("esSelect").addEventListener("change", event => { state.currentEs = event.target.value; analyze(); });
+    document.getElementById("esSelect").addEventListener("change", event => { state.currentEs = event.target.value; analyzeWithWindowCache(); });
     document.getElementById("rankMode").addEventListener("change", event => { state.rankMode = event.target.value; analyze(); });
+    document.getElementById("rankMetric").addEventListener("change", event => { state.rankMetric = event.target.value; analyze(); });
     document.getElementById("topNSelect").addEventListener("change", event => { state.topN = Number(event.target.value); analyze(); });
     document.getElementById("exportButton").addEventListener("click", exportCsv);
     const addButton = document.getElementById("windowAddButton");
@@ -943,7 +1139,7 @@
       state.visibleSeries.add(size);
       addMenu.hidden = true;
       addButton.setAttribute("aria-expanded", "false");
-      analyze();
+      analyzeWithWindowCache();
     }));
     document.addEventListener("click", event => {
       if (!event.target.closest(".window-add-wrap")) {
@@ -958,6 +1154,10 @@
       const dataset = state.datasets[state.currentEs];
       if (state.activeTab === "landscape" && dataset?.analysisReady && state.selected) renderSelection(dataset.sequences);
     }));
+    document.getElementById("openScopeTab").addEventListener("click", () => {
+      document.querySelector('.view-tab[data-tab="scope"]').click();
+      window.scrollTo({ top: document.querySelector(".view-tabs").offsetTop - 12, behavior: "smooth" });
+    });
     document.querySelectorAll(".view-tab").forEach(tab => tab.addEventListener("click", () => {
       state.activeTab = tab.dataset.tab;
       document.querySelectorAll(".view-tab").forEach(item => {
@@ -973,6 +1173,10 @@
       window.requestAnimationFrame(() => {
         if (tab.dataset.tab === "statistics") {
           renderStatistics();
+          return;
+        }
+        if (tab.dataset.tab === "scope") {
+          renderScopePage();
           return;
         }
         if (tab.dataset.tab === "methods") return;
@@ -1008,7 +1212,10 @@
   loadLsuLibraryStatus();
   loadDatabaseCatalog();
   loadProvenanceCatalog();
-  loadHumanReferences().then(loadBuiltInAllEsAlignments).then(analyze).catch(error => {
+  loadHumanReferences()
+    .then(() => Promise.all([loadBuiltInAllEsAlignments(), loadAllWindowManifest()]))
+    .then(analyzeWithWindowCache)
+    .catch(error => {
     document.getElementById("datasetLabel").textContent = "数据载入失败";
     document.getElementById("analysisStatus").textContent = error.message;
     document.getElementById("dataNotice").textContent = "请检查本地数据文件与服务路径";
