@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">ESCoMA rRNA 模块网络标志</title>
+  <desc id="desc">一条折叠的 RNA 主链连接多个模块节点，强调扩增区段内部的局部约束结构。</desc>
+  <rect x="1" y="1" width="46" height="46" rx="7" fill="#F1F4F6" stroke="#D2DDE1"/>
+  <path d="M9 31C12 20 18 17 24 24S35 32 39 17" fill="none" stroke="#17324D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M16 20C14 11 25 9 27 17" fill="none" stroke="#00866A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M29 31C30 41 40 40 40 32" fill="none" stroke="#6C4FA3" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="9" cy="31" r="3.5" fill="#0065A8"/>
+  <circle cx="16" cy="20" r="3.5" fill="#00866A"/>
+  <circle cx="24" cy="24" r="4.5" fill="#17324D"/>
+  <circle cx="31" cy="30" r="3.5" fill="#C63D2F"/>
+  <circle cx="39" cy="17" r="3.5" fill="#D27A00"/>
+  <circle cx="40" cy="32" r="3.5" fill="#6C4FA3"/>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">ESCoMA 多序列对齐标志</title>
+  <desc id="desc">多条高度不同的序列轨道穿过同一保守窗口，突出跨物种对齐中的局部保守峰。</desc>
+  <rect x="1" y="1" width="46" height="46" rx="7" fill="#EDF3F5" stroke="#D2DDE1"/>
+  <rect x="9" y="8" width="4" height="32" rx="2" fill="#0065A8"/>
+  <rect x="16" y="13" width="4" height="22" rx="2" fill="#00866A"/>
+  <rect x="23" y="6" width="4" height="36" rx="2" fill="#17324D"/>
+  <rect x="30" y="11" width="4" height="26" rx="2" fill="#C63D2F"/>
+  <rect x="37" y="16" width="4" height="16" rx="2" fill="#6C4FA3"/>
+  <path d="M7 24H42" stroke="#FFFFFF" stroke-width="5"/>
+  <path d="M8 24H41" stroke="#A67C37" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="11" cy="24" r="2.5" fill="#0065A8"/>
+  <circle cx="18" cy="24" r="2.5" fill="#00866A"/>
+  <circle cx="25" cy="24" r="2.5" fill="#17324D"/>
+  <circle cx="32" cy="24" r="2.5" fill="#C63D2F"/>
+  <circle cx="39" cy="24" r="2.5" fill="#6C4FA3"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">ESCoMA 核心与外扩模块标志</title>
+  <desc id="desc">深色核糖体核心外环绕多个保守模块，其中一个扩增模块以珊瑚色突出。</desc>
+  <rect x="1" y="1" width="46" height="46" rx="7" fill="#E8F0EF" stroke="#D2DDE1"/>
+  <path d="M13 18A13 13 0 0 1 24 11" fill="none" stroke="#0065A8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M30 12A13 13 0 0 1 37 22" fill="none" stroke="#00866A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M36 29A13 13 0 0 1 27 37" fill="none" stroke="#C63D2F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M20 37A13 13 0 0 1 11 27" fill="none" stroke="#6C4FA3" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="24" cy="24" r="7" fill="#17324D"/>
+  <circle cx="24" cy="24" r="2.2" fill="#FFFFFF"/>
+  <path d="M24 17V13M31 24H35M24 31V35M17 24H13" stroke="#17324D" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

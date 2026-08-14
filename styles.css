@@ -51,19 +51,9 @@ p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .brand-mark {
   width: 40px;
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--teal-soft);
+  flex: 0 0 40px;
 }
-
-.brand-mark span { width: 3px; border-radius: 1px; background: var(--teal); }
-.brand-mark span:nth-child(1), .brand-mark span:nth-child(5) { height: 12px; }
-.brand-mark span:nth-child(2), .brand-mark span:nth-child(4) { height: 24px; }
-.brand-mark span:nth-child(3) { height: 34px; background: var(--coral); }
+.brand-mark img { display: block; width: 40px; height: 40px; }
 
 .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .button {
