@@ -1,32 +1,58 @@
-# RiboVine prototype
+# RiboVine EvoES
 
-Interactive workspace for browsing curated human expansion-segment references and ranking conserved windows after a validated cross-species alignment is loaded.
+RiboVine is a static research interface for inspecting traceable mammalian LSU
+alignments and complete, offline-computed EvoES candidate scores. GitHub Pages
+only downloads frozen JSON; MAFFT, RNAstructure CUDA, and random-null calculations never
+run in the browser.
 
-## Score
+## Frozen scoring panel
 
-For every sliding window:
+- 61 mammalian LSU records: one human coordinate anchor and 60 nonhuman mammals
+- 11 mammalian orders
+- Rfam `RF02543` full-model coverage, bit score >= 1000, span 4,000-8,000 nt,
+  ambiguous fraction <= 1%
+- Every sequence keeps species, TaxID, accession, source URL, source coordinates,
+  strand, MD5, and evidence class
+- MAFFT E-INS-i (`--genafpair --maxiterate 1000 --ep 0`)
 
-- `identity = matching pair-sites / comparable pair-sites`
-- `coverage = comparable pair-sites / all possible pair-sites`
-- `score = identity * coverage`
+Only nonhuman mammals contribute to scores. Human defines ES and mature-28S
+coordinates. Records with unresolved localization or missing required scores are
+not shown and are never converted to zero.
 
-The built-in reference layer contains 22 curated Homo sapiens ES records from Human ES Reference v1.2. Twenty 28S ES are projected from a MAFFT G-INS-i whole-28S alignment across 37 mammals and receive separate boundary-anchor and mapped-base QC. This produces 740 auditable ES-by-species calls: 687 pass and 53 remain unresolved. Failed localization is retained but excluded from scoring and is never interpreted as ES absence.
+## EvoES v2.0 scoring
 
-ES3L belongs to 5.8S and ES4L spans the 5.8S/28S boundary. They remain visible as human references but require a dedicated composite LSU alignment before cross-species scoring. ES shorter than 20 nt are scored as a whole segment instead of forcing a 20 nt window.
+For each human-coordinate window, species-level conservation is:
 
-The **数据总览** view reports upstream database layers, per-ES mammal coverage, per-species ES coverage, the complete ES-by-species QC matrix, clickable source records and literature/structure provenance. Each matrix cell and alignment species label links to its NCBI accession. SILVA, Rfam, ROD and RNAcentral collections overlap and are not summed as unique sequences.
-
-New traceable source layers include the locally verified Rfam RF00002 5.8S family and ROD v1.2 full-length eukaryotic rDNA operons. ROD keeps 5.8S and 28S on the same genomic operon and is therefore the priority substrate for future ES3L/ES4L localization; neither source is treated as a completed ES boundary call until ES-specific QC passes.
-
-The low-entropy track is normalized sequence entropy (`1 - H/ln(4)`) from the MSA. It is not structural entropy and the interface does not generate structural predictions.
-
-## Input
-
-Use the **导入对齐 FASTA** command for custom data. Sequences must already be aligned and have equal lengths. Optional headers can specify a clade:
-
-```fasta
->Homo_sapiens|Mammalia
-ACGUACGU--ACGU
->Mus_musculus|Mammalia
-ACGUACGUUUACGU
+```text
+C_i = M / (M + X + D + I)
 ```
+
+Species require a callable fraction of at least 0.80. Scores are averaged first
+within each mammalian order and then equally across callable orders. At least six
+orders and order coverage >= 0.80 are required. Leave-one-order-out sensitivity
+is retained in the cache.
+
+Structural low entropy is calculated on the human reference with RNAstructure
+5.7 `partition-cuda` (CUDA 11.8, `sm_89`, float fast-math) in a fixed `100 nt +
+complete ES + 100 nt` context. Windows require `P_intra >= 0.30`. A `B=500`
+dinucleotide-preserving null model yields `S_LE`, and the optional joint ranking
+is:
+
+```text
+S_joint = sqrt(S_cons * S_LE)
+```
+
+The page shows only complete representative peaks with both scores, all coverage
+fields, structure gate results, and null-model metadata present.
+
+## Rebuild
+
+The reproducible offline steps live outside the static site:
+
+- `../scripts/fetch_expanded_mammal_lsu.py`
+- `../scripts/build_evoes_static_cache.py`
+- `../scripts/compute_evoes_null_cache.py`
+- `../scripts/compute_evoes_gpu_cache.py`
+- `../scripts/publish_evoes_checkpoints.py`
+
+The browser-ready cache is `data/evoes_static_cache_v2.json`.

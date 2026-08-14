@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RiboVine｜ES保守性分析</title>
-  <link rel="stylesheet" href="styles.css?v=methods-v1">
+  <link rel="stylesheet" href="styles.css?v=perf-methods-v3">
 </head>
 <body>
   <header class="app-header">
@@ -13,7 +13,6 @@
       <div><div class="brand-line">RiboVine <span>真实数据工作台</span></div><h1>核糖体扩增区段保守性分析</h1></div>
     </div>
     <div class="header-actions">
-      <button id="importButton" class="button button-secondary" type="button">导入对齐序列</button>
       <button id="exportButton" class="button button-primary" type="button">导出排行结果</button>
     </div>
   </header>
@@ -21,10 +20,9 @@
   <main>
     <section class="control-band" aria-label="分析参数">
       <label><span>扩增区段</span><select id="esSelect"><option value="">正在载入人源参考...</option></select></label>
-      <label><span>比较类群</span><select id="cladeSelect"><option value="Eukaryota">全部真核</option><option value="Metazoa">后生动物</option><option value="Vertebrata">脊椎动物</option><option value="Mammalia">哺乳动物</option></select></label>
-      <fieldset class="window-fieldset"><legend>人源窗口长度</legend><label><input type="checkbox" name="window" value="20" checked><span>20 nt</span></label><label><input type="checkbox" name="window" value="30" checked><span>30 nt</span></label><label><input type="checkbox" name="window" value="40" checked><span>40 nt</span></label><label><input type="checkbox" name="window" value="50" checked><span>50 nt</span></label></fieldset>
-      <label class="entropy-control"><span>低熵阈值 <strong id="entropyThresholdLabel">≥ 0.65</strong></span><input id="entropyThreshold" type="range" min="0.35" max="0.90" step="0.05" value="0.65"></label>
-      <label><span>排行去重</span><select id="rankMode"><option value="independent">独立候选窗口</option><option value="all">保留全部窗口</option></select></label>
+      <div class="control-readout"><span>正式评分范围</span><strong>非人哺乳动物 · 目间等权</strong></div>
+      <div class="window-picker" id="windowPicker"><span class="control-label">人源窗口长度</span><div class="window-picker-row"><div id="selectedWindowChips" class="window-chips" aria-label="已加入的窗口长度"></div><div class="window-add-wrap"><button id="windowAddButton" class="window-add-button" type="button" aria-expanded="false" aria-controls="windowAddMenu">＋ 添加长度</button><div id="windowAddMenu" class="window-add-menu" hidden><button type="button" data-window-size="20">20 nt</button><button type="button" data-window-size="30">30 nt</button><button type="button" data-window-size="40">40 nt</button><button type="button" data-window-size="50">50 nt</button></div></div></div></div>
+      <label><span>候选视图</span><select id="rankMode"><option value="peaks">代表窗口</option><option value="all">全部可评分窗口</option></select></label>
     </section>
 
     <section class="context-strip" aria-live="polite">
@@ -34,6 +32,12 @@
       <div><span>人源ES长度</span><strong id="alignmentLength">--</strong></div>
       <div><span>本地LSU库</span><strong id="lsuLibraryStatus">正在读取QC</strong></div>
       <div><span>分析状态</span><strong id="analysisStatus">跨物种MSA待构建</strong></div>
+    </section>
+
+    <section class="analysis-scope-note" aria-label="评分适用范围">
+      <strong>评分边界</strong>
+      <span>仅在人源ES的进化新增、非核糖体核心区域生成窗口；古老宿主螺旋、核心依赖区和定位未决区仅展示，不进入保守性、结构低熵与候选排名。</span>
+      <span class="scope-rule">人源仅作坐标锚点</span>
     </section>
 
     <nav class="view-tabs" aria-label="分析视图">
@@ -46,20 +50,21 @@
     <section id="landscapeTab" class="tab-panel active">
       <section class="summary-grid" aria-label="最高分窗口摘要">
         <article class="summary-card primary-card"><span class="summary-label">人源最高分窗口</span><strong id="topCoordinates">--</strong><span id="topContext">--</span></article>
-        <article class="summary-card"><span class="summary-label">保守性</span><strong id="topScore">--</strong><span>一致性 × 覆盖度</span></article>
-        <article class="summary-card"><span class="summary-label">低熵</span><strong id="topLowEntropy">--</strong><span id="topEntropyContext">待跨物种计算</span></article>
-        <article class="summary-card"><span class="summary-label">比对覆盖度</span><strong id="topCoverage">--</strong><span id="topCoverageContext">待跨物种MSA</span></article>
+        <article class="summary-card"><span class="summary-label">目平衡保守性</span><strong id="topScore">--</strong><span>非人哺乳动物 · 0–100</span></article>
+        <article class="summary-card"><span class="summary-label">结构低熵</span><strong id="topLowEntropy">--</strong><span id="topEntropyContext">RNAstructure CUDA · B=500</span></article>
+        <article class="summary-card"><span class="summary-label">哺乳动物目覆盖</span><strong id="topCoverage">--</strong><span id="topCoverageContext">待跨物种MSA</span></article>
       </section>
 
       <section class="alignment-block">
-        <div class="selected-window-heading"><div><span class="eyebrow">全长原始序列与位点约束</span><h3 id="selectionSubtitle">--</h3></div><div class="selected-metrics"><span>保守性 <strong id="selectedScore">--</strong></span><span>低熵 <strong id="selectedLowEntropy">--</strong></span><span>覆盖度 <strong id="selectedCoverage">--</strong></span><span>物种数 <strong id="selectedSpecies">--</strong></span></div></div>
-        <div class="alignment-key"><span class="human-key"></span><span>人源参考</span><i></i><span>选中窗口</span><i class="mismatch-key"></i><span>替换</span><b>–</b><span>缺口</span></div>
+        <div class="selected-window-heading"><div><span class="eyebrow">原始序列与位点约束</span><h3 id="selectionSubtitle">--</h3></div><div class="selection-tools"><div class="selected-metrics"><span>保守性 <strong id="selectedScore">--</strong></span><span>低熵 <strong id="selectedLowEntropy">--</strong></span><span>覆盖度 <strong id="selectedCoverage">--</strong></span><span>物种数 <strong id="selectedSpecies">--</strong></span></div><div class="alignment-mode-switch" aria-label="序列显示范围"><button type="button" class="active" data-alignment-mode="focus" aria-pressed="true">候选局部</button><button type="button" data-alignment-mode="full" aria-pressed="false">全长概览</button></div></div></div>
+        <div class="alignment-key"><span class="human-key"></span><span>人源参考（不计分）</span><i></i><span>选中窗口</span><i class="mismatch-key"></i><span>替换</span><b>–</b><span>明确缺失</span></div>
+        <div id="taxonLegend" class="taxon-legend" aria-label="物种分类颜色图例"></div>
         <div id="alignmentViewer" class="alignment-viewer embedded-alignment"></div>
       </section>
 
       <section class="analysis-section landscape-section">
-        <div class="section-heading"><div><h2>人源ES双层约束景观</h2><p>横轴为人源ES序列位置；其他物种用于计算对应窗口的跨物种约束</p></div><div id="legend" class="legend" aria-label="窗口长度图例"></div></div>
-        <div id="chart" class="chart-wrap genome-chart" role="img" aria-label="保守性和低序列熵双轨图"></div>
+        <div class="section-heading"><div><h2>人源ES二维候选景观</h2><p>轨道一为非人哺乳动物目平衡保守性；轨道二为 RNAstructure CUDA 零模型结构低熵</p></div><div id="legend" class="legend" aria-label="窗口长度图例"></div></div>
+        <div id="chart" class="chart-wrap genome-chart" role="img" aria-label="保守性和结构低熵双轨图"></div>
         <div id="chartTooltip" class="chart-tooltip" hidden></div>
       </section>
     </section>
@@ -67,23 +72,23 @@
     <section id="rankingTab" class="tab-panel" hidden>
       <div class="ranking-workspace">
         <div class="ranking-section">
-          <div class="section-heading compact-heading"><div><h2>人源保守窗口排行</h2><p>先通过低熵阈值，再按跨物种保守性从高到低排列；点击候选可回到景观查看对应区段</p></div><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div>
-          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">低熵</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
+          <div class="section-heading compact-heading"><div><h2>人源候选窗口排行</h2><p id="rankingMethodNote">结构低熵结果接入前，按目平衡保守性进行预排序；点击候选可返回景观查看</p></div><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div>
+          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">结构低熵</th><th class="numeric">目覆盖</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
         </div>
       </div>
     </section>
 
     <section id="statisticsTab" class="tab-panel statistics-tab" hidden>
       <section class="statistics-heading">
-        <div><span class="eyebrow">跨物种 ES 数据矩阵</span><h2>数据覆盖与质量控制总览</h2><p>以22个人源ES为参考轴；定位失败表示当前证据不足，不解释为该物种缺失此ES</p></div>
-        <div class="statistics-key" aria-label="定位状态图例"><span><i class="status-pass"></i>通过定位QC</span><span><i class="status-fail"></i>定位未确定</span><span><i class="status-pending"></i>待复合LSU</span></div>
+        <div><span class="eyebrow">跨物种 ES 数据矩阵</span><h2>完整缓存数据与质量控制总览</h2><p>只统计已经完成定位、MSA、保守性、结构门控和零模型的 ES；缺失与未决记录不显示</p></div>
+        <div class="statistics-key" aria-label="定位状态图例"><span><i class="status-pass"></i>完整缓存且通过质控</span></div>
       </section>
 
       <section id="databaseLayerStats" class="database-layer-stats" aria-label="数据层级统计"></section>
 
       <section class="statistics-layout">
         <article class="statistics-panel">
-          <div class="section-heading compact-heading"><div><h2>各ES物种覆盖</h2><p>条形长度为通过定位QC的哺乳动物比例</p></div></div>
+          <div class="section-heading compact-heading"><div><h2>各ES物种覆盖</h2><p>只显示有完整二维缓存的 ES</p></div></div>
           <div id="esCoverageChart" class="coverage-chart" role="img" aria-label="每个ES通过定位质控的物种数"></div>
         </article>
         <article class="statistics-panel">
@@ -93,7 +98,7 @@
       </section>
 
       <section class="matrix-section">
-        <div class="section-heading"><div><h2>ES × 物种定位矩阵</h2><p>每格对应一条可审计的同源判定；点击ES列名进入该ES景观</p></div><strong id="matrixSummary" class="matrix-summary">--</strong></div>
+        <div class="section-heading"><div><h2>ES × 物种缓存矩阵</h2><p>有色格对应可追溯的实际序列；空位不显示缺失值，点击 ES 列名进入景观</p></div><strong id="matrixSummary" class="matrix-summary">--</strong></div>
         <div id="coverageMatrix" class="coverage-matrix"></div>
       </section>
 
@@ -110,118 +115,113 @@
 
     <section id="methodsTab" class="tab-panel methods-tab" hidden>
       <section class="methods-heading">
-        <div><span class="eyebrow">RiboVine 计算定义</span><h2>从跨物种比对到保守窗口排行</h2><p>所有得分均在通过同源定位 QC 的等长 MSA 上计算；人源无缺口碱基定义滑动窗口坐标。</p></div>
-        <div class="method-version"><span>当前实现</span><strong>序列约束 v1.0</strong><small>不包含结构熵或功能证据</small></div>
+        <div><span class="eyebrow">RiboVine 计算定义</span><h2>跨物种保守性与结构低熵评分</h2><p>所有公式对应当前静态缓存；人源定义坐标，非人哺乳动物参与保守性评分。</p></div>
+        <div class="method-version"><span>当前实现</span><strong>EvoES SOP v2.0</strong><small>RNAstructure 5.7 CUDA · B=500 · schema 2.1.0</small></div>
       </section>
 
       <section class="method-flow" aria-label="计算流程">
-        <article><span>01</span><strong>定位与质控</strong><small>仅保留通过 ES 同源定位 QC 的物种</small></article>
+        <article><span>01</span><strong>同源定位</strong><small>锚点约束的 E-INS-i MSA</small></article>
         <i aria-hidden="true">→</i>
-        <article><span>02</span><strong>构建等长 MSA</strong><small>人源非缺口列映射为 ES 位置 1…L</small></article>
+        <article><span>02</span><strong>人源滑动窗口</strong><small>20 / 30 / 40 / 50 nt</small></article>
         <i aria-hidden="true">→</i>
-        <article><span>03</span><strong>滑动窗口</strong><small>分别扫描 20、30、40、50 nt</small></article>
+        <article><span>03</span><strong>两条独立轨道</strong><small>保守性与结构低熵</small></article>
         <i aria-hidden="true">→</i>
-        <article><span>04</span><strong>双层筛选</strong><small>低熵达标后按保守性降序排列</small></article>
+        <article><span>04</span><strong>候选排序</strong><small>Pareto 前沿与代表峰</small></article>
       </section>
 
-      <section class="formula-section">
-        <div class="section-heading compact-heading"><div><h2>一、窗口与有效比较位点</h2><p>窗口长度按人源碱基数计数；人源插入区内的每个非缺口位置对应一个 MSA 列。</p></div></div>
-        <div class="formula-layout">
-          <div class="formula-copy">
-            <div class="equation"><span>全部可能配对位点</span><strong>P = C(n, 2) × w = n(n − 1)w / 2</strong></div>
-            <p><b>n</b> 为当前比较类群中通过 QC 的物种数，<b>w</b> 为人源窗口长度。每一对物种在每个窗口列最多贡献一次比较。</p>
-            <p>若任一序列在该列为缺口“−”或未知碱基“N”，该物种对在此列不计入有效比较。A、C、G、U 为可比较状态；导入数据中的 T 会标准化为 U。</p>
+      <section id="method-alignment" class="formula-section method-chapter">
+        <div class="chapter-heading"><span>01</span><div><h2>坐标映射与可判读性</h2><p>窗口按人源无缺口 ES 坐标计数，MSA 只负责把各物种的同源碱基映射到对应列。</p></div></div>
+        <div class="formula-layout method-split">
+          <div class="formula-copy method-copy">
+            <div class="math-row primary-math">
+              <span class="math-label">物种 i 的窗口可判读率</span>
+              <div class="math-expression"><i>R</i><sub>i</sub>(W) = <span class="math-frac"><span><i>M</i><sub>i</sub> + <i>X</i><sub>i</sub> + <i>D</i><sub>i</sub></span><span><i>L</i><sub>W</sub></span></span></div>
+              <p>仅当 <b>R<sub>i</sub>(W) ≥ 0.80</b> 时，该物种进入当前窗口的评分。</p>
+            </div>
+            <dl class="state-definitions">
+              <div><dt>M</dt><dd>与人源一致</dd></div><div><dt>X</dt><dd>明确替换</dd></div><div><dt>D</dt><dd>明确缺失</dd></div><div><dt>I</dt><dd>相对人源插入</dd></div><div><dt>U</dt><dd>N、截断或未知，不计入分母</dd></div>
+            </dl>
           </div>
-          <div class="msa-example" aria-label="四个物种四个位点的示例比对">
-            <div class="msa-row msa-head"><span>示例 MSA</span><b>1</b><b>2</b><b>3</b><b>4</b></div>
-            <div class="msa-row human"><span>人</span><b>A</b><b>C</b><b>G</b><b>U</b></div>
-            <div class="msa-row"><span>物种 B</span><b>A</b><b>C</b><b>G</b><b>U</b></div>
+          <div class="msa-example" aria-label="MSA状态映射示例">
+            <div class="msa-row msa-head"><span>MSA 状态</span><b>1</b><b>2</b><b>3</b><b>4</b></div>
+            <div class="msa-row human"><span>人源锚点</span><b>A</b><b>C</b><b>G</b><b>U</b></div>
+            <div class="msa-row"><span>物种 B</span><b>A</b><b class="mismatch">U</b><b>G</b><b>U</b></div>
             <div class="msa-row"><span>物种 C</span><b>A</b><b>C</b><b class="invalid">−</b><b>U</b></div>
-            <div class="msa-row"><span>物种 D</span><b>A</b><b class="mismatch">U</b><b>G</b><b class="invalid">N</b></div>
-            <div class="msa-summary"><span>n = 4</span><span>w = 4</span><span>P = 24</span></div>
+            <div class="msa-row"><span>物种 D</span><b>A</b><b>C</b><b>G</b><b class="invalid">N</b></div>
+            <div class="msa-summary"><span>B：含 X</span><span>C：含 D</span><span>D：含 U</span></div>
           </div>
         </div>
       </section>
 
-      <section class="formula-section">
-        <div class="section-heading compact-heading"><div><h2>二、保守性：一致性与覆盖度共同约束</h2><p>高一致性不能抵消大量缺口，因此最终保守性同时惩罚信息缺失。</p></div></div>
-        <div class="formula-grid three">
+      <section id="method-conservation" class="formula-section method-chapter">
+        <div class="chapter-heading"><span>02</span><div><h2>目平衡保守性</h2><p>先在每个哺乳动物目内平均，再对各目等权，避免高采样类群主导结果。</p></div></div>
+        <div class="formula-grid three math-derivation">
           <article class="formula-panel">
-            <span class="formula-index">2.1</span><h3>平均成对一致性</h3>
-            <div class="equation large">I = M / V</div>
-            <p><b>M</b>：碱基相同的有效物种对位点数；<b>V</b>：排除缺口和 N 后的有效物种对位点总数。</p>
+            <span class="formula-index">2.1</span><h3>物种级</h3>
+            <div class="math-expression"><i>C</i><sub>i</sub> = <span class="math-frac"><span><i>M</i><sub>i</sub></span><span><i>M</i><sub>i</sub>+<i>X</i><sub>i</sub>+<i>D</i><sub>i</sub>+<i>I</i><sub>i</sub></span></span></div>
+            <p>替换、明确缺失和内部插入都会降低局部保留率；技术性未知 U 不进入分母。</p>
           </article>
           <article class="formula-panel">
-            <span class="formula-index">2.2</span><h3>比对覆盖度</h3>
-            <div class="equation large">C = V / P</div>
-            <p>覆盖度衡量全部理论比较中实际具有明确碱基的比例，范围为 0–1。</p>
+            <span class="formula-index">2.2</span><h3>目内平均</h3>
+            <div class="math-expression"><i>C</i><sub>g</sub> = <span class="math-frac"><span>1</span><span><i>n</i><sub>g</sub></span></span><span class="math-sum">Σ</span><sub>i∈g</sub><i>C</i><sub>i</sub></div>
+            <p>同一目的多个物种先汇总为一个目级估计，降低系统发育非独立性。</p>
           </article>
           <article class="formula-panel emphasis">
-            <span class="formula-index">2.3</span><h3>窗口保守性得分</h3>
-            <div class="equation large">S<sub>cons</sub> = I × C = M / P</div>
-            <p>范围为 0–1。只有“碱基相同且数据完整”的窗口才能接近 1。</p>
+            <span class="formula-index">2.3</span><h3>目间等权</h3>
+            <div class="math-expression"><i>S</i><sub>cons</sub> = 100 × <span class="math-frac"><span>1</span><span><i>G</i></span></span><span class="math-sum">Σ</span><sub>g=1</sub><sup>G</sup><i>C</i><sub>g</sub></div>
+            <p>至少 6 个可判读目，且 Coverage<sub>order</sub>=G/G<sub>planned</sub> ≥ 0.80。</p>
           </article>
         </div>
-        <div class="worked-example"><strong>示例结果</strong><span>M = 15</span><span>V = 18</span><span>P = 24</span><span>I = 15/18 = 0.833</span><span>C = 18/24 = 0.750</span><b>S<sub>cons</sub> = 0.625</b></div>
+        <div class="audit-line"><strong>留一目稳健性</strong><div class="math-expression compact-math">Δ<sub>LOO</sub> = max<sub>g</sub> | <i>S</i><sub>cons</sub><sup>(−g)</sup> − <i>S</i><sub>cons</sub> |</div><span>Δ<sub>LOO</sub> &gt; 10 标记为目敏感</span></div>
       </section>
 
-      <section class="formula-section">
-        <div class="section-heading compact-heading"><div><h2>三、低序列熵：位点碱基分布的一致程度</h2><p>这里计算的是 MSA 一级序列 Shannon 熵，不是 RNA 构象熵、折叠熵或结构置信度。</p></div></div>
+      <section id="method-entropy" class="formula-section method-chapter">
+        <div class="chapter-heading"><span>03</span><div><h2>组成校正的结构低熵</h2><p>折叠背景固定为“上游 100 nt + 完整 ES + 下游 100 nt”；该指标不是 MSA 序列 Shannon 熵。</p></div></div>
         <div class="entropy-layout">
           <div class="entropy-steps">
-            <div class="equation-block"><span>位点碱基频率</span><strong>p<sub>b,k</sub> = count(b at k) / Σ<sub>x∈{A,C,G,U}</sub> count(x at k)</strong><small>计算频率时排除缺口和 N</small></div>
-            <div class="equation-block"><span>位点 Shannon 熵</span><strong>H<sub>k</sub> = −Σ<sub>b∈{A,C,G,U}</sub> p<sub>b,k</sub> ln(p<sub>b,k</sub>)</strong><small>约定 0 × ln(0) = 0；自然对数</small></div>
-            <div class="equation-block active"><span>归一化低熵</span><strong>LE<sub>k</sub> = 1 − H<sub>k</sub> / ln(4)</strong><small>单一碱基占优时趋近 1；四种碱基均等时为 0</small></div>
-            <div class="equation-block"><span>窗口低熵</span><strong>LE<sub>W</sub> = (1/w) Σ<sub>k∈W</sub> LE<sub>k</sub></strong><small>对窗口对应 MSA 列的位点低熵取算术平均</small></div>
+            <div class="math-row"><span class="math-label">位置结构熵</span><div class="math-expression"><i>H</i><sub>i</sub> = −<i>p</i><sub>i0</sub> ln <i>p</i><sub>i0</sub> − <span class="math-sum">Σ</span><sub>j≠i</sub><i>p</i><sub>ij</sub> ln <i>p</i><sub>ij</sub></div><p>p<sub>ij</sub> 来自 RNAstructure 5.7 partition-cuda 的碱基配对概率。</p></div>
+            <div class="math-row"><span class="math-label">窗口观测熵</span><div class="math-expression"><i>H</i><sub>obs</sub>(W) = <span class="math-frac"><span>1</span><span><i>L</i><sub>W</sub></span></span><span class="math-sum">Σ</span><sub>i∈W</sub><i>H</i><sub>i</sub></div><p>所有窗口共享相同的完整 ES 与侧翼背景。</p></div>
+            <div class="math-row"><span class="math-label">结构门控</span><div class="math-expression"><i>P</i><sub>intra</sub>(W) = <span class="math-frac"><span>1</span><span><i>L</i><sub>W</sub></span></span><span class="math-sum">Σ</span><sub>i∈W</sub><span class="math-sum">Σ</span><sub>j∈ES</sub><i>p</i><sub>ij</sub> ≥ 0.30</div><p>P<sub>external</sub> 单独记录，不直接并入得分。</p></div>
+            <div class="math-row active"><span class="math-label">零模型百分位</span><div class="math-expression"><i>p</i><sub>LE</sub> = <span class="math-frac"><span>1 + <i>N</i><sub>≤</sub></span><span><i>B</i> + 1</span></span><span class="math-separator">；</span><i>S</i><sub>LE</sub> = 100(1 − <i>p</i><sub>LE</sub>)</div><p>N<sub>≤</sub> 为 H<sub>null</sub> ≤ H<sub>obs</sub> 的次数；B=500，窗口保持二核苷酸组成及首末碱基。</p></div>
           </div>
-          <div class="entropy-scale" role="img" aria-label="碱基分布由单一到均匀时低熵从1下降到0">
-            <div class="distribution"><span><i style="width:100%"></i></span><b>A 100%</b><strong>LE = 1.000</strong></div>
-            <div class="distribution mixed"><span><i style="width:75%"></i><i style="width:25%"></i></span><b>C 75% · U 25%</b><strong>LE = 0.594</strong></div>
-            <div class="distribution uniform"><span><i></i><i></i><i></i><i></i></span><b>A/C/G/U 各 25%</b><strong>LE = 0.000</strong></div>
+          <div class="entropy-scale" role="img" aria-label="结构低熵零模型示意">
+            <div class="distribution"><span><i style="width:92%"></i></span><b>真实窗口低于多数随机序列</b><strong>S<sub>LE</sub> 高</strong></div>
+            <div class="distribution mixed"><span><i style="width:55%"></i><i style="width:45%"></i></span><b>真实窗口接近零模型中位数</b><strong>S<sub>LE</sub> 中</strong></div>
+            <div class="distribution uniform"><span><i></i><i></i><i></i><i></i></span><b>低复杂度导致随机空间重复</b><strong>标记复核</strong></div>
           </div>
         </div>
-        <div class="worked-example"><strong>示例窗口</strong><span>LE₁ = 1.000</span><span>LE₂ = 0.594</span><span>LE₃ = 1.000</span><span>LE₄ = 1.000</span><b>LE<sub>W</sub> = 0.899</b></div>
+        <div class="audit-line"><strong>Monte Carlo 误差</strong><div class="math-expression compact-math">SE(<i>S</i><sub>LE</sub>) = 100 √<span class="root-content"><span class="math-frac"><span><i>p</i><sub>LE</sub>(1−<i>p</i><sub>LE</sub>)</span><span><i>B</i>+1</span></span></span></div><span>随机种子由窗口 ID 确定</span></div>
       </section>
 
-      <section class="formula-section">
-        <div class="section-heading compact-heading"><div><h2>四、双层筛选、排序与去重</h2><p>低熵是准入条件，保守性是主排序指标；两者不合并成一个任意加权总分。</p></div></div>
+      <section id="method-ranking" class="formula-section method-chapter">
+        <div class="chapter-heading"><span>04</span><div><h2>二维筛选与候选排序</h2><p>保守性与结构低熵始终独立展示；只有生成单一排行时才计算联合分数。</p></div></div>
+        <div class="joint-score-line"><span>联合排序分数</span><div class="math-expression"><i>S</i><sub>joint</sub> = √<span class="root-content"><i>S</i><sub>cons</sub> × <i>S</i><sub>LE</sub></span></div><p>几何平均要求两条证据同时较高，任一低分都会限制联合分数。</p></div>
         <div class="selection-diagram">
-          <div><span>全部滑动窗口</span><strong>每种 w 扫描 L − w + 1 个窗口</strong></div><i>→</i>
-          <div><span>第一层</span><strong>保留 LE<sub>W</sub> ≥ 阈值</strong><small>当前默认阈值 0.65</small></div><i>→</i>
-          <div><span>第二层</span><strong>按 S<sub>cons</sub> 从高到低</strong><small>同分时依次按低熵、短窗口、靠前坐标</small></div><i>→</i>
-          <div><span>独立候选模式</span><strong>同长度窗口重叠比例 &lt; 0.60</strong><small>最多保留 100 个候选</small></div>
+          <div><span>二维证据</span><strong>(S<sub>cons</sub>, S<sub>LE</sub>)</strong><small>两个分数不互相抵消</small></div><i>→</i>
+          <div><span>Pareto 前沿</span><strong>保留不存在双维优势竞争者的窗口</strong></div><i>→</i>
+          <div><span>重叠合并</span><strong>重叠至少 10 nt 的窗口归为同一候选峰</strong></div><i>→</i>
+          <div><span>峰代表</span><strong>每个峰保留 S<sub>joint</sub> 最高窗口</strong></div>
         </div>
-        <div class="formula-layout rule-layout">
-          <div class="formula-copy">
-            <div class="equation"><span>重叠比例</span><strong>R(A,B) = overlap(A,B) / min(|A|, |B|)</strong></div>
-            <p>仅在相同窗口长度内执行去重。候选按排序依次进入结果集；若与已接收的同长度窗口重叠达到 60%，则跳过该候选。“保留全部窗口”模式不执行此步骤。</p>
-          </div>
-          <div class="window-overlap" role="img" aria-label="两个窗口重叠比例示意">
-            <div class="window-axis"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="window-bar a">窗口 A · 20 nt</div>
-            <div class="window-bar b">窗口 B · 20 nt</div>
-            <div class="overlap-label">重叠 12 nt → R = 12/20 = 0.60 → 独立模式跳过 B</div>
-          </div>
-        </div>
+        <div class="audit-line"><strong>质量门槛</strong><span>低覆盖或 P<sub>intra</sub> 未通过者排除</span><span>Δ<sub>LOO</sub> &gt; 10 或零模型低多样性转人工复核</span></div>
       </section>
 
-      <section class="formula-section method-notes">
-        <div class="section-heading compact-heading"><div><h2>五、坐标、边界与解释限制</h2></div></div>
+      <section class="formula-section method-notes method-chapter">
+        <div class="chapter-heading"><span>05</span><div><h2>坐标与解释边界</h2><p>下列规则决定结果能否进入图、排行与导出文件。</p></div></div>
         <dl class="definition-grid">
           <div><dt>人源 ES 坐标</dt><dd>从人源 MSA 序列删除缺口后按 1 开始计数，是滑动窗口和实验靶点设计的主坐标。</dd></div>
           <div><dt>人 28S 绝对坐标</dt><dd>人源 ES 坐标加该 ES 在参考 28S 中的起始偏移量，仅用于已经建立可靠坐标映射的 ES。</dd></div>
-          <div><dt>短 ES</dt><dd>当 ES 长度小于已选窗口长度时，不强行构造 20 nt 窗口，而是将整个 ES 作为一个窗口评分。</dd></div>
-          <div><dt>比较类群</dt><dd>选择全部真核、后生动物、脊椎动物或哺乳动物会改变 n、P、碱基频率以及最终排行。</dd></div>
-          <div><dt>定位失败</dt><dd>未通过同源定位 QC 的序列不参与公式计算；这表示当前证据不足，不表示该物种生物学上缺失此 ES。</dd></div>
-          <div><dt>得分用途</dt><dd>得分用于发现候选保守子区段，不直接证明功能、结构稳定性、可编辑性或实验效应。</dd></div>
+          <div><dt>评分物种</dt><dd>仅非人哺乳动物参与评分；人源是锚点，其他类群即使后续加入也只展示、不标记得分。</dd></div>
+          <div><dt>缺失策略</dt><dd>未定位、低覆盖、结构门控失败或零模型未完成的窗口不进入图、排行和导出，不以 0 分替代。</dd></div>
+          <div><dt>静态缓存</dt><dd>MAFFT、RNAstructure 5.7 partition-cuda 与 B=500 零模型均在离线脚本中完成；GPU 引擎使用 CUDA 11.8、sm_89 与 float fast-math。GitHub Pages 只下载 JSON，不执行服务端计算。</dd></div>
+          <div><dt>引擎版本</dt><dd>当前低熵分数全部来自同一 RNAstructure CUDA 引擎；不可与旧版 ViennaRNA CPU 分数直接混合作为同一量表排序。</dd></div>
+          <div><dt>当前限制</dt><dd>出生节点和核心区掩码仍需逐 ES 人工冻结；当前代表峰属于可审计的候选筛选，不直接证明功能或实验效应。</dd></div>
         </dl>
       </section>
     </section>
 
-    <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 平均成对一致性 × 比对覆盖度</span><span id="entropyMethod"><i class="method-symbol coverage"></i>低熵需在同源定位与MSA后计算</span><span><i class="method-symbol score"></i>人源坐标用于后续编辑靶点设计</span><strong id="dataNotice">当前载入人源真实参考；不从单序列推断保守性</strong></footer>
+    <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <dialog id="importDialog"><form method="dialog" id="importForm"><div class="dialog-heading"><div><h2>导入已对齐FASTA</h2><p>必须包含Homo sapiens；所有序列等长，允许A、C、G、U、T、N和“-”。</p></div><button class="close-button" value="cancel" aria-label="关闭" type="submit">×</button></div><label><span>ES名称</span><input id="importName" value="自定义ES" autocomplete="off"></label><label><span>已对齐FASTA</span><textarea id="fastaInput" spellcheck="false" placeholder=">Homo_sapiens|Mammalia&#10;ACGUACGU--ACGU&#10;>Mus_musculus|Mammalia&#10;ACGUACGUUUACGU"></textarea></label><p id="importError" class="error-message" role="alert"></p><div class="dialog-actions"><button class="button button-secondary" value="cancel" type="submit">取消</button><button id="loadFastaButton" class="button button-primary" value="default" type="button">载入并分析</button></div></form></dialog>
-  <script src="app.js?v=methods-v2"></script>
+  <script src="app.js?v=evoes-v2.3"></script>
 </body>
 </html>

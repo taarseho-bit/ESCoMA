@@ -1,8 +1,20 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-13",
+  "updated_at": "2026-08-14",
   "counting_warning": "数据库之间存在来源重叠，记录数不可相加为唯一生物序列总数。",
   "databases": [
+    {
+      "source_id": "Expanded_mammal_LSU_v1", "name": "EvoES 哺乳动物评分面板", "version": "2026-08-14 / v1", "records": 61,
+      "scope": "61 个物种（人源锚点 + 60 个非人哺乳动物），覆盖 11 个哺乳动物目",
+      "status": "本地评分集已冻结", "status_class": "verified", "official_url": "https://rfam.org/family/RF02543",
+      "links": [
+        {"label": "Rfam RF02543", "url": "https://rfam.org/family/RF02543"},
+        {"label": "NCBI Nucleotide", "url": "https://www.ncbi.nlm.nih.gov/nuccore/"},
+        {"label": "MAFFT E-INS-i", "url": "https://mafft.cbrc.jp/alignment/software/algorithms/algorithms.html"}
+      ],
+      "provenance": "每条序列保留 species、TaxID、accession、NCBI 原始链接、来源坐标、链方向、MD5、RF02543 覆盖与 bit score；网页物种名可直接打开原始记录。",
+      "use": "EvoES v2.0 目平衡保守性评分与离线代表峰缓存；人源不计分。"
+    },
     {
       "source_id": "ROD_v1_2", "name": "Ribosomal Operon Database", "version": "v1.2 GoldenRod", "records": 69480,
       "scope": "完整真核 18S-ITS1-5.8S-ITS2-28S operon；11,935 个基因组",
