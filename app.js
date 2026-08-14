@@ -147,7 +147,7 @@
   }
 
   async function loadAllWindowManifest() {
-    const response = await fetch("data/windows/manifest.json?v=1.0.0-20260814");
+    const response = await fetch("data/windows/manifest.json?v=1.0.0-20260814-b47");
     if (!response.ok) throw new Error(`全滑窗索引载入失败（HTTP ${response.status}）`);
     const manifest = await response.json();
     if (manifest.schema_version !== "1.0.0" || !manifest.datasets || manifest.step_nt !== 1) {
@@ -162,7 +162,7 @@
     const entry = state.allWindowsManifest?.datasets?.[esId];
     if (!dataset?.analysisReady || !entry || dataset.allWindowsLoaded) return;
     document.getElementById("analysisStatus").textContent = `正在载入 ${entry.window_count.toLocaleString()} 个逐 1 nt 窗口`;
-    const response = await fetch(`data/${entry.file}?v=1.0.0-20260814`);
+    const response = await fetch(`data/${entry.file}?v=1.0.0-20260814-b47`);
     if (!response.ok) throw new Error(`${esId}全滑窗载入失败（HTTP ${response.status}）`);
     const payload = await response.json();
     if (payload.es_id !== esId || payload.window_count !== entry.window_count || !Array.isArray(payload.windows)) {
