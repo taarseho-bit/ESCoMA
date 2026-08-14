@@ -4,19 +4,19 @@
   const WINDOW_COLORS = { 20: "#245B78", 30: "#2F6F6D", 40: "#856A9D", 50: "#A67C37" };
   const WHOLE_SEGMENT_COLOR = "#8A4F4B";
   const TAXON_STYLES = {
-    Primates: { label: "灵长目", color: "#315E7D" },
-    Rodentia: { label: "啮齿目", color: "#A35C45" },
-    Lagomorpha: { label: "兔形目", color: "#92713B" },
-    Carnivora: { label: "食肉目", color: "#34766F" },
-    Cetartiodactyla: { label: "鲸偶蹄目", color: "#8A6D2F" },
-    Perissodactyla: { label: "奇蹄目", color: "#795E8E" },
-    Chiroptera: { label: "翼手目", color: "#55738F" },
-    Eulipotyphla: { label: "真盲缺目", color: "#5B7D62" },
-    Proboscidea: { label: "长鼻目", color: "#776B5D" },
-    Cingulata: { label: "有甲目", color: "#9A6374" },
-    Didelphimorphia: { label: "负鼠目", color: "#657480" },
-    Mammalia: { label: "哺乳纲 · 目未定", color: "#68757A" },
-    Other: { label: "其他类群 · 仅展示", color: "#8A9294" }
+    Primates: { label: "灵长目", color: "#0065A8" },
+    Rodentia: { label: "啮齿目", color: "#C63D2F" },
+    Lagomorpha: { label: "兔形目", color: "#D27A00" },
+    Carnivora: { label: "食肉目", color: "#00866A" },
+    Cetartiodactyla: { label: "鲸偶蹄目", color: "#9B4F96" },
+    Perissodactyla: { label: "奇蹄目", color: "#6C4FA3" },
+    Chiroptera: { label: "翼手目", color: "#0087A8" },
+    Eulipotyphla: { label: "真盲缺目", color: "#4C7F28" },
+    Proboscidea: { label: "长鼻目", color: "#625C57" },
+    Cingulata: { label: "有甲目", color: "#B23A73" },
+    Didelphimorphia: { label: "负鼠目", color: "#8A4E20" },
+    Mammalia: { label: "哺乳纲 · 目未定", color: "#52616B" },
+    Other: { label: "其他类群 · 仅展示", color: "#9AA2A8" }
   };
 
   const state = {
@@ -67,10 +67,36 @@
   function populateEsSelect() {
     const select = document.getElementById("esSelect");
     select.replaceChildren();
-    (state.humanReferencePayload?.records ?? []).forEach(record => {
-      const scope = SCOPE_LABELS[scopeClassFor(record)];
-      const cached = state.datasets[record.es_id]?.analysisReady ? " · 有跨物种缓存" : "";
-      select.add(new Option(`${record.es_id} · ${record.length_nt} nt · ${scope.short}${cached}`, record.es_id));
+    const records = state.humanReferencePayload?.records ?? [];
+    const grouped = [
+      {
+        label: "可分析 ES",
+        records: records.filter(record => state.datasets[record.es_id]?.analysisReady),
+        disabled: false
+      },
+      {
+        label: "仅展示 · 核心配对风险",
+        records: records.filter(record => !state.datasets[record.es_id]?.analysisReady && scopeClassFor(record) === "core_hold"),
+        disabled: true
+      },
+      {
+        label: "仅展示 · 坐标或结构未决",
+        records: records.filter(record => !state.datasets[record.es_id]?.analysisReady && scopeClassFor(record) === "unresolved"),
+        disabled: true
+      }
+    ];
+    grouped.filter(group => group.records.length).forEach(group => {
+      const optionGroup = document.createElement("optgroup");
+      optionGroup.label = `${group.label}（${group.records.length}）`;
+      optionGroup.className = group.disabled ? "es-group-disabled" : "es-group-enabled";
+      group.records.forEach(record => {
+        const scope = SCOPE_LABELS[scopeClassFor(record)];
+        const suffix = group.disabled ? scope.short : "可分析 · 已有跨物种缓存";
+        const option = new Option(`${record.es_id} · ${record.length_nt} nt · ${suffix}`, record.es_id);
+        option.disabled = group.disabled;
+        optionGroup.appendChild(option);
+      });
+      select.appendChild(optionGroup);
     });
     select.value = state.currentEs;
   }
@@ -1195,6 +1221,7 @@
     const visible = records.filter(record => state.scopeFilter === "all" || scopeClassFor(record) === state.scopeFilter);
     const rows = visible.map(record => {
       const scope = SCOPE_LABELS[scopeClassFor(record)];
+      const canAnalyze = Boolean(state.datasets[record.es_id]?.analysisReady);
       const secondary = Number.isFinite(record.secondary_current_start_incl)
         ? `28S:${record.secondary_current_start_incl}–${record.secondary_current_end_incl}`
         : "未提供";
@@ -1205,7 +1232,7 @@
       ].join("");
       return `<tr>
         <td><span class="scope-status ${scope.className}">${scope.label}</span></td>
-        <td><button type="button" class="scope-es-link" data-scope-es="${record.es_id}">${record.es_id}</button><small>${escapeHtml(record.host_helix)} · ${record.length_nt} nt</small></td>
+        <td><button type="button" class="scope-es-link" data-scope-es="${record.es_id}" ${canAnalyze ? "" : `disabled title="仅展示：${escapeHtml(scope.label)}"`}>${record.es_id}</button><small>${escapeHtml(record.host_helix)} · ${record.length_nt} nt</small></td>
         <td>${escapeHtml(record.component_coordinates || "未冻结")}<small>宿主螺旋全跨度</small></td>
         <td>${secondary}<small>${Number.isFinite(record.primary_vs_secondary_length_delta_nt) ? `与全跨度长度差 ${record.primary_vs_secondary_length_delta_nt > 0 ? "+" : ""}${record.primary_vs_secondary_length_delta_nt} nt` : "无 Parker 插入代理"}</small></td>
         <td>${escapeHtml(scopeReason(record))}</td>
@@ -1217,7 +1244,7 @@
   }
 
   async function openEsLandscape(esId) {
-    if (!state.datasets[esId]) return;
+    if (!state.datasets[esId]?.analysisReady) return;
     state.currentEs = esId;
     document.getElementById("esSelect").value = esId;
     document.querySelector('.view-tab[data-tab="landscape"]').click();
