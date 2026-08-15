@@ -1,8 +1,8 @@
 (() => {
   "use strict";
 
-  const WINDOW_COLORS = { 20: "#245B78", 30: "#2F6F6D", 40: "#856A9D", 50: "#A67C37" };
-  const WHOLE_SEGMENT_COLOR = "#8A4F4B";
+  const WINDOW_COLORS = { 20: "#0072B2", 30: "#009E73", 40: "#CC79A7", 50: "#D55E00" };
+  const WHOLE_SEGMENT_COLOR = "#E69F00";
   const TAXON_STYLES = {
     Primates: { label: "灵长目", color: "#0065A8" },
     Rodentia: { label: "啮齿目", color: "#C63D2F" },
@@ -588,9 +588,9 @@
     const trackGap = 38;
     const tops = [margin.top, margin.top + trackH + trackGap];
     const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "等待跨物种多序列比对的双约束轨道" });
-    [["轨道一", "目平衡保守性", "conservation-track-label"], ["轨道二", "结构低熵", "entropy-track-label"]].forEach(([title, subtitle, labelClass], index) => {
+    [["轨道一", "目平衡保守性", "conservation-track-label", "conservation-track-bg"], ["轨道二", "结构低熵", "entropy-track-label", "entropy-track-bg"]].forEach(([title, subtitle, labelClass, backgroundClass], index) => {
       const top = tops[index];
-      svg.appendChild(svgEl("rect", { x: margin.left, y: top, width: plotW, height: trackH, class: "track-bg pending-track" }));
+      svg.appendChild(svgEl("rect", { x: margin.left, y: top, width: plotW, height: trackH, class: `track-bg pending-track ${backgroundClass}` }));
       const mid = top + trackH / 2;
       svg.appendChild(svgEl("line", { x1: margin.left + 12, x2: width - margin.right - 12, y1: mid, y2: mid, class: "pending-line" }));
       const titleEl = svgEl("text", { x: 12, y: top + 34, class: `track-label ${labelClass}` }); titleEl.textContent = title; svg.appendChild(titleEl);
@@ -762,8 +762,8 @@
     const hasLowEntropy = state.results.some(item => Number.isFinite(item.lowEntropy));
     const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "人源坐标上的目平衡保守性与结构低熵双轨图" });
 
-    [conservationTop, entropyTop].forEach(top => {
-      svg.appendChild(svgEl("rect", { x: margin.left, y: top, width: plotW, height: trackH, class: "track-bg" }));
+    [[conservationTop, "conservation-track-bg"], [entropyTop, "entropy-track-bg"]].forEach(([top, backgroundClass]) => {
+      svg.appendChild(svgEl("rect", { x: margin.left, y: top, width: plotW, height: trackH, class: `track-bg ${backgroundClass}` }));
       [0, 50, 100].forEach(value => {
         svg.appendChild(svgEl("line", { x1: margin.left, x2: width - margin.right, y1: yTrack(value, top), y2: yTrack(value, top), class: "grid-line" }));
         const label = svgEl("text", { x: margin.left - 8, y: yTrack(value, top) + 4, "text-anchor": "end" });
@@ -838,12 +838,8 @@
         });
         segments.forEach(segment => {
           const entropyPath = trackPath(segment, "lowEntropy", entropyTop);
-          svg.appendChild(svgEl("path", { d: entropyPath, class: "score-line", stroke: windowColor(size), "data-size": size, opacity: ".72" }));
+          svg.appendChild(svgEl("path", { d: entropyPath, class: "score-line", stroke: windowColor(size), "data-size": size }));
         });
-        entropySeries.forEach(d => svg.appendChild(svgEl("circle", {
-          cx: x((d.humanStart + d.humanEnd) / 2 - 1), cy: yTrack(d.lowEntropy, entropyTop), r: 3.2,
-          class: "score-point", fill: windowColor(size), opacity: ".82"
-        })));
       }
     });
     if (!hasLowEntropy) {
@@ -1061,9 +1057,9 @@
       const clusters = [];
       const measureCluster = cluster => {
         cluster.totalLength = cluster.events.reduce((sum, event) => sum + event.insertedBases.length, 0);
-        cluster.markerText = `+${cluster.totalLength}`;
+        cluster.markerText = `${cluster.totalLength}`;
         cluster.centerAnchor = (cluster.events[0].anchorHumanPosition + cluster.events[cluster.events.length - 1].anchorHumanPosition) / 2;
-        cluster.markerWidth = Math.max(18, cluster.markerText.length * 4.4 + 8);
+        cluster.markerWidth = Math.max(10, cluster.markerText.length * 4 + 4);
         cluster.start = cluster.centerAnchor * cellWidth - cluster.markerWidth / 2;
         cluster.end = cluster.centerAnchor * cellWidth + cluster.markerWidth / 2;
       };
@@ -1095,7 +1091,7 @@
         const firstAnchor = insertionAnchorLabel(cluster.events[0].anchorHumanPosition, humanLength);
         const label = cluster.events.length === 1
           ? `${species.name}：${firstAnchor}，折叠 ${cluster.totalLength} nt，点击查看`
-          : `${species.name}：${cluster.events.length}个相邻折叠片段，共 ${cluster.markerText} nt，点击查看`;
+          : `${species.name}：${cluster.events.length}个相邻折叠片段，共 ${cluster.totalLength} nt，点击查看`;
         const left = detailed
           ? `${cluster.centerAnchor * 15}px`
           : `${cluster.centerAnchor / Math.max(1, humanLength) * 100}%`;
@@ -1114,7 +1110,7 @@
       return `<span class="${classes.join(" ")}">${escapeHtml(base)}</span>`;
       }).join("");
       const markers = isHuman ? "" : makeInsertionMarkers(sequence, species, speciesIndex);
-      return `<span class="detail-sequence${isHuman ? " human-base" : ""}">${bases}${markers}</span>`;
+      return `<span class="detail-sequence${isHuman ? " human-base" : ""}${markers ? " has-insertions" : ""}">${bases}${markers}</span>`;
     };
 
     const makeOverviewBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
@@ -1123,7 +1119,7 @@
       const selected = escapeHtml(projected.slice(humanStart - 1, humanEnd));
       const after = escapeHtml(projected.slice(humanEnd));
       const markers = isHuman ? "" : makeInsertionMarkers(sequence, species, speciesIndex);
-      return `<span class="overview-sequence${isHuman ? " human-base" : ""}"><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers}</span>`;
+      return `<span class="overview-sequence${isHuman ? " human-base" : ""}${markers ? " has-insertions" : ""}"><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers}</span>`;
     };
     const makeBases = detailed ? makeDetailedBases : makeOverviewBases;
     viewer.classList.toggle("alignment-detail", detailed);
@@ -1138,7 +1134,7 @@
     rows.push(renderProjectedConstraintTrack("轨道一", "目平衡保守性", conservation, window, "conservation", humanMap.alignmentColumns, state.alignmentMode));
     rows.push(renderProjectedConstraintTrack("轨道二", "结构低熵", lowEntropyColumns, window, "entropy", humanMap.alignmentColumns, state.alignmentMode));
     const densityLabel = detailed ? "详细全长" : "紧凑概览";
-    rows.push(`<div class="alignment-divider species-divider"><span>其他物种 · ${densityLabel}</span><small>+长度：点击查看折叠片段</small></div>`);
+    rows.push(`<div class="alignment-divider species-divider"><span>其他物种 · ${densityLabel}</span><small>数字框：折叠长度，点击查看</small></div>`);
     sequences.filter(species => species !== human).sort(compareByHumanPhylogeneticDistance).forEach((species, speciesIndex) => {
       const sourceUrl = species.source_url || (species.accession ? `https://www.ncbi.nlm.nih.gov/nuccore/${species.accession}` : "");
       const taxon = taxonomyFor(species);
@@ -1231,8 +1227,8 @@
     const score = type === "conservation" ? window.score : window.lowEntropy;
     const svgWidth = compact ? `${visibleValues.length}ch` : `${width}`;
     const preserveAspectRatio = compact ? ' preserveAspectRatio="none"' : "";
-    const trackColor = type === "conservation" ? "var(--blue)" : "var(--teal)";
-    return `<div class="alignment-row constraint-row ${type}-constraint" style="--constraint-color:${windowColor(window.size)};--track-color:${trackColor}"><span class="alignment-label constraint-label"><strong><b>${trackNumber}</b><span>${label}</span></strong><small>当前窗口 <em>${scoreFmt(score)}</em> · 0–100</small></span><span class="constraint-plot projected-constraint ${compact ? "compact-projected" : "detailed-projected"}"><svg width="${svgWidth}" height="${height}" viewBox="0 0 ${width} ${height}"${preserveAspectRatio} role="img" aria-label="${trackNumber}${label}人28S坐标投影曲线，当前窗口得分${scoreFmt(score)}"><rect class="constraint-selection" x="${selectedX}" y="0" width="${selectedWidth}" height="${height}"></rect><line class="constraint-grid" x1="0" x2="${width}" y1="${y(50)}" y2="${y(50)}"></line><path class="constraint-path" d="${path}"></path></svg></span></div>`;
+    const trackColor = type === "conservation" ? "var(--conservation)" : "var(--entropy)";
+    return `<div class="alignment-row constraint-row ${type}-constraint" style="--constraint-color:${trackColor};--track-color:${trackColor}"><span class="alignment-label constraint-label"><strong><b>${trackNumber}</b><span>${label}</span></strong><small>当前窗口 <em>${scoreFmt(score)}</em> · 0–100</small></span><span class="constraint-plot projected-constraint ${compact ? "compact-projected" : "detailed-projected"}"><svg width="${svgWidth}" height="${height}" viewBox="0 0 ${width} ${height}"${preserveAspectRatio} role="img" aria-label="${trackNumber}${label}人28S坐标投影曲线，当前窗口得分${scoreFmt(score)}"><rect class="constraint-selection" x="${selectedX}" y="0" width="${selectedWidth}" height="${height}"></rect><line class="constraint-grid" x1="0" x2="${width}" y1="${y(50)}" y2="${y(50)}"></line><path class="constraint-path" d="${path}"></path></svg></span></div>`;
   }
 
   function markStatisticsDirty() {
