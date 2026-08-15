@@ -107,7 +107,7 @@
     allWindowsManifest: null,
     scopeFilter: "all",
     activeTab: "landscape",
-    alignmentMode: "focus",
+    alignmentMode: "full",
     alignmentRenderKey: null,
     activeInsertionButton: null,
     statisticsDirty: true
@@ -137,17 +137,17 @@
     const records = state.humanReferencePayload?.records ?? [];
     const grouped = [
       {
-        label: "可分析 ES",
+        label: "图谱区段",
         records: records.filter(record => state.datasets[record.es_id]?.analysisReady),
         disabled: false
       },
       {
-        label: "仅展示 · 核心配对风险",
+        label: "核心配对区段",
         records: records.filter(record => !state.datasets[record.es_id]?.analysisReady && scopeClassFor(record) === "core_hold"),
         disabled: true
       },
       {
-        label: "仅展示 · 坐标或结构未决",
+        label: "边界待确认区段",
         records: records.filter(record => !state.datasets[record.es_id]?.analysisReady && scopeClassFor(record) === "unresolved"),
         disabled: true
       }
@@ -157,9 +157,7 @@
       optionGroup.label = `${group.label}（${group.records.length}）`;
       optionGroup.className = group.disabled ? "es-group-disabled" : "es-group-enabled";
       group.records.forEach(record => {
-        const scope = SCOPE_LABELS[scopeClassFor(record)];
-        const suffix = group.disabled ? scope.short : "可分析 · 已有跨物种缓存";
-        const option = new Option(`${record.es_id} · ${record.length_nt} nt · ${suffix}`, record.es_id);
+        const option = new Option(`${record.es_id} · ${record.length_nt} nt`, record.es_id);
         option.disabled = group.disabled;
         optionGroup.appendChild(option);
       });
@@ -175,6 +173,7 @@
       dataScope: "human_reference_only",
       simulated: false,
       analysisReady: false,
+      humanCoordinateOffset: Number.isFinite(record.start_incl) ? record.start_incl - 1 : null,
       metadata: record,
       sequences: [{
         name: "Homo sapiens",
@@ -511,6 +510,10 @@
   function windowColor(size) { return WINDOW_COLORS[size] || WHOLE_SEGMENT_COLOR; }
   function scoreFmt(value) { return Number.isFinite(value) ? value.toFixed(1) : "—"; }
   function humanCoordinateText(window) { return `${window.humanStart}–${window.humanEnd}`; }
+  function humanAbsolutePosition(position) {
+    const offset = state.datasets[state.currentEs]?.humanCoordinateOffset;
+    return Number.isFinite(offset) ? offset + position : position;
+  }
   function humanAbsoluteCoordinateText(window) {
     const offset = state.datasets[state.currentEs]?.humanCoordinateOffset;
     return Number.isFinite(offset) ? `${offset + window.humanStart}–${offset + window.humanEnd}` : "--";
@@ -519,7 +522,7 @@
 
   function render(dataset, sequences, ranked, humanLength = humanCoordinateMap(findHumanSequence(sequences)).length) {
     document.getElementById("datasetLabel").textContent = dataset.label;
-    document.getElementById("speciesCount").textContent = `${dataset.summary?.scoring_species ?? sequences.length - 1}计分 / ${sequences.length}展示`;
+    document.getElementById("speciesCount").textContent = `${Math.max(0, sequences.length - 1)}个非人物种 / ${sequences.length}条序列`;
     document.getElementById("alignmentLength").textContent = `${humanLength} nt`;
     const allWindows = dataset.summary?.all_window_count ?? dataset.windows?.length ?? 0;
     const completeWindows = dataset.summary?.complete_window_count ?? 0;
@@ -562,7 +565,7 @@
     document.getElementById("rankingMethodNote").textContent = `${SCOPE_LABELS[scopeClassFor(meta)].label}：${scopeAction(meta)}`;
     document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>低熵 = 待同源定位与MSA后计算';
     document.getElementById("dataNotice").textContent = "人源真实参考；保守性与低熵不从单序列推断";
-    document.getElementById("topCoordinates").textContent = `1–${humanLength}`;
+    document.getElementById("topCoordinates").textContent = `${humanAbsolutePosition(1)}–${humanAbsolutePosition(humanLength)}`;
     document.getElementById("topContext").textContent = meta.window_strategy;
     document.getElementById("topScore").textContent = "--";
     document.getElementById("topLowEntropy").textContent = "--";
@@ -585,19 +588,19 @@
     const trackGap = 38;
     const tops = [margin.top, margin.top + trackH + trackGap];
     const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "等待跨物种多序列比对的双约束轨道" });
-    [["轨道一", "保守性"], ["轨道二", "结构低熵"]].forEach(([title, subtitle], index) => {
+    [["轨道一", "目平衡保守性", "conservation-track-label"], ["轨道二", "结构低熵", "entropy-track-label"]].forEach(([title, subtitle, labelClass], index) => {
       const top = tops[index];
       svg.appendChild(svgEl("rect", { x: margin.left, y: top, width: plotW, height: trackH, class: "track-bg pending-track" }));
       const mid = top + trackH / 2;
       svg.appendChild(svgEl("line", { x1: margin.left + 12, x2: width - margin.right - 12, y1: mid, y2: mid, class: "pending-line" }));
-      const titleEl = svgEl("text", { x: 12, y: top + 34, class: "track-label" }); titleEl.textContent = title; svg.appendChild(titleEl);
-      const subEl = svgEl("text", { x: 12, y: top + 52, class: "track-subtitle" }); subEl.textContent = subtitle; svg.appendChild(subEl);
+      const titleEl = svgEl("text", { x: 12, y: top + 34, class: `track-label ${labelClass}` }); titleEl.textContent = title; svg.appendChild(titleEl);
+      const subEl = svgEl("text", { x: 12, y: top + 52, class: `track-subtitle ${labelClass}` }); subEl.textContent = subtitle; svg.appendChild(subEl);
       const wait = svgEl("text", { x: margin.left + plotW / 2, y: mid - 9, "text-anchor": "middle", class: "pending-label" });
       wait.textContent = index === 0 ? "待定位跨物种ES同源区段并构建MSA" : "待从验证后的比对/结构概率计算";
       svg.appendChild(wait);
     });
     const xLabel = svgEl("text", { x: margin.left + plotW / 2, y: height - 9, "text-anchor": "middle", class: "axis-label" });
-    xLabel.textContent = `人源ES坐标（1–${length} nt）`; svg.appendChild(xLabel);
+    xLabel.textContent = `人28S坐标（${humanAbsolutePosition(1)}–${humanAbsolutePosition(length)} nt）`; svg.appendChild(xLabel);
     wrap.replaceChildren(svg);
   }
 
@@ -605,11 +608,11 @@
     const meta = dataset.metadata;
     const length = human.sequence.length;
     const rows = [
-      renderCoordinateRuler(human.sequence, length),
-      `<div class="alignment-row human-row"><span class="alignment-label">Homo sapiens</span><span class="alignment-bases">${human.sequence.split("").map(base => `<span class="base human-base">${base}</span>`).join("")}</span></div>`,
+      renderProjectedCoordinateRuler(length, "focus"),
+      `<div class="alignment-row human-row"><span class="alignment-label">Homo sapiens</span><span class="alignment-bases"><span class="detail-sequence human-base">${human.sequence.split("").map(base => `<span class="base human-base">${escapeHtml(displayBase(base))}</span>`).join("")}</span></span></div>`,
       '<div class="alignment-divider"><span>逐位点约束轨道</span></div>',
-      renderPendingConstraintTrack("保守性", length, "待跨物种MSA"),
-      renderPendingConstraintTrack("结构低熵", length, "待跨物种MSA"),
+      renderPendingConstraintTrack("轨道一 · 目平衡保守性", length, "待跨物种MSA"),
+      renderPendingConstraintTrack("轨道二 · 结构低熵", length, "待跨物种MSA"),
       `<div class="reference-metadata"><span><strong>宿主螺旋</strong>${meta.host_helix || "--"}</span><span><strong>坐标系统</strong>${meta.coord_system_id}</span><span><strong>参考序列</strong>${meta.ref_accession}</span><span><strong>筛选状态</strong>${meta.screening_status}</span></div>`
     ];
     document.getElementById("selectionSubtitle").textContent = `${meta.es_id} · ${meta.molecule} · ${meta.component_coordinates}`;
@@ -618,7 +621,10 @@
     document.getElementById("selectedCoverage").textContent = "--";
     document.getElementById("selectedSpecies").textContent = "1";
     renderTaxonLegend([human]);
-    document.getElementById("alignmentViewer").innerHTML = rows.join("");
+    const viewer = document.getElementById("alignmentViewer");
+    viewer.classList.add("alignment-detail");
+    viewer.classList.remove("alignment-overview");
+    viewer.innerHTML = rows.join("");
   }
 
   function renderPendingConstraintTrack(label, length, status) {
@@ -640,7 +646,7 @@
       document.getElementById("topCoverageContext").textContent = `${speciesCount}个非人物种`;
       return;
     }
-    document.getElementById("topCoordinates").textContent = humanCoordinateText(top);
+    document.getElementById("topCoordinates").textContent = humanAbsoluteCoordinateText(top);
     document.getElementById("topContext").textContent = `${top.size} nt窗口 · 非人哺乳动物目间等权`;
     document.getElementById("topScore").textContent = scoreFmt(top.score);
     document.getElementById("topLowEntropy").textContent = scoreFmt(top.lowEntropy);
@@ -692,7 +698,7 @@
         positionA.displayRank - positionB.displayRank ||
         SPECIES_NAME_COLLATOR.compare(a.label, b.label);
     }).map(item => `
-      <span style="--taxon-color:${item.color}"><i></i><b>${item.label}</b><small>${item.count}种${item.scoring ? " · 计分" : " · 仅展示"}</small></span>`).join("");
+      <span style="--taxon-color:${item.color}"><i></i><b>${item.label}</b><small>${item.count}种</small></span>`).join("");
   }
 
   function renderLegend() {
@@ -751,6 +757,7 @@
     const conservationTop = margin.top;
     const entropyTop = conservationTop + trackH + trackGap;
     const x = value => margin.left + value / Math.max(1, length - 1) * plotW;
+    const xBoundary = value => margin.left + value / Math.max(1, length) * plotW;
     const yTrack = (value, top) => top + (1 - Math.max(0, Math.min(100, value)) / 100) * trackH;
     const hasLowEntropy = state.results.some(item => Number.isFinite(item.lowEntropy));
     const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "人源坐标上的目平衡保守性与结构低熵双轨图" });
@@ -764,11 +771,11 @@
         svg.appendChild(label);
       });
     });
-    [[conservationTop + 34, "轨道一", "目平衡保守性"], [entropyTop + 34, "轨道二", "结构低熵"]].forEach(([yPos, title, subtitle]) => {
-      const titleEl = svgEl("text", { x: 12, y: yPos, class: "track-label" });
+    [[conservationTop + 34, "轨道一", "目平衡保守性", "conservation-track-label"], [entropyTop + 34, "轨道二", "结构低熵", "entropy-track-label"]].forEach(([yPos, title, subtitle, labelClass]) => {
+      const titleEl = svgEl("text", { x: 12, y: yPos, class: `track-label ${labelClass}` });
       titleEl.textContent = title;
       svg.appendChild(titleEl);
-      const subEl = svgEl("text", { x: 12, y: yPos + 18, class: "track-subtitle" });
+      const subEl = svgEl("text", { x: 12, y: yPos + 18, class: `track-subtitle ${labelClass}` });
       subEl.textContent = subtitle;
       svg.appendChild(subEl);
     });
@@ -779,21 +786,21 @@
       const tx = x(value - 1);
       svg.appendChild(svgEl("line", { x1: tx, x2: tx, y1: entropyTop + trackH, y2: entropyTop + trackH + 5, class: "axis-line" }));
       const label = svgEl("text", { x: tx, y: entropyTop + trackH + 20, "text-anchor": i === 0 ? "start" : i === tickCount - 1 ? "end" : "middle" });
-      label.textContent = value;
+      label.textContent = humanAbsolutePosition(value);
       svg.appendChild(label);
     }
     const xLabel = svgEl("text", { x: margin.left + plotW / 2, y: height - 9, "text-anchor": "middle", class: "axis-label" });
-    xLabel.textContent = "人源ES坐标（nt）";
+    xLabel.textContent = "人28S坐标（nt）";
     svg.appendChild(xLabel);
 
     if (state.selected) {
       const startPosition = state.selected.humanStart - 1;
-      const endPosition = state.selected.humanEnd - 1;
-      const bandWidth = Math.max(2, x(endPosition) - x(startPosition));
-      svg.appendChild(svgEl("rect", { x: x(startPosition), y: conservationTop, width: bandWidth, height: entropyTop + trackH - conservationTop, class: "selected-band" }));
-      svg.appendChild(svgEl("rect", { x: x(startPosition), y: conservationTop, width: bandWidth, height: entropyTop + trackH - conservationTop, class: "selected-outline" }));
-      const peak = svgEl("text", { x: Math.min(width - margin.right - 105, x(startPosition) + 5), y: conservationTop - 12, class: "peak-label" });
-      peak.textContent = `最高分  ${humanCoordinateText(state.selected)} · ${state.selected.size} nt`;
+      const bandX = xBoundary(startPosition);
+      const bandWidth = Math.max(2, xBoundary(state.selected.humanEnd) - bandX);
+      svg.appendChild(svgEl("rect", { x: bandX, y: conservationTop, width: bandWidth, height: entropyTop + trackH - conservationTop, class: "selected-band" }));
+      svg.appendChild(svgEl("rect", { x: bandX, y: conservationTop, width: bandWidth, height: entropyTop + trackH - conservationTop, class: "selected-outline" }));
+      const peak = svgEl("text", { x: Math.min(width - margin.right - 145, bandX + 5), y: conservationTop - 12, class: "peak-label" });
+      peak.textContent = `最高分  人28S ${humanAbsoluteCoordinateText(state.selected)} · ${state.selected.size} nt`;
       svg.appendChild(peak);
     }
 
@@ -856,9 +863,9 @@
       hoverLine.setAttribute("x1", x(coordinate)); hoverLine.setAttribute("x2", x(coordinate)); hoverLine.setAttribute("visibility", "visible");
       const rows = [...seriesBySize.entries()].map(([size, series]) => {
         const datum = nearestWindow(series, coordinate);
-        return `<span style="color:${windowColor(size)}">●</span> ${size} nt：ES ${humanCoordinateText(datum)} · 保守性 <strong>${scoreFmt(datum.score)}</strong> · 结构低熵 ${scoreFmt(datum.lowEntropy)}`;
+        return `<span style="color:${windowColor(size)}">●</span> ${size} nt：人28S ${humanAbsoluteCoordinateText(datum)} · 轨道一 目平衡保守性 <strong>${scoreFmt(datum.score)}</strong> · 轨道二 结构低熵 ${scoreFmt(datum.lowEntropy)}`;
       });
-      tooltip.innerHTML = `<strong>人源ES位置 ${coordinate + 1}</strong><br>${rows.join("<br>")}`;
+      tooltip.innerHTML = `<strong>人28S位置 ${humanAbsolutePosition(coordinate + 1)}</strong><br>${rows.join("<br>")}`;
       tooltip.hidden = false; tooltip.style.left = `${Math.min(window.innerWidth - 280, event.clientX + 14)}px`; tooltip.style.top = `${Math.max(8, event.clientY - 26)}px`;
     });
     hit.addEventListener("mouseleave", () => { hoverLine.setAttribute("visibility", "hidden"); tooltip.hidden = true; });
@@ -924,10 +931,19 @@
     return blocks;
   }
 
+  function displayBase(base) {
+    const normalized = String(base ?? "-").toUpperCase();
+    return normalized === "N" ? "-" : normalized;
+  }
+
+  function projectSequenceForDisplay(sequence, humanColumns) {
+    return humanColumns.map(column => displayBase(sequence[column])).join("");
+  }
+
   function insertionAnchorLabel(anchor, humanLength) {
-    if (anchor <= 0) return "人源 ES 第1位之前";
-    if (anchor >= humanLength) return `人源 ES 第${humanLength}位之后`;
-    return `人源 ES 第${anchor}位与第${anchor + 1}位之间`;
+    if (anchor <= 0) return `人28S 第${humanAbsolutePosition(1)}位之前`;
+    if (anchor >= humanLength) return `人28S 第${humanAbsolutePosition(humanLength)}位之后`;
+    return `人28S 第${humanAbsolutePosition(anchor)}位与第${humanAbsolutePosition(anchor + 1)}位之间`;
   }
 
   function formatInsertionSequence(sequence) {
@@ -942,7 +958,7 @@
     const body = document.getElementById("insertionDialogBody");
     const title = document.getElementById("insertionDialogTitle");
     if (!dialog || !body || !title) return;
-    title.textContent = `${insertion.species.name} · 相对人源插入候选`;
+    title.textContent = `${insertion.species.name} · 相对人源额外片段`;
     const anchor = insertionAnchorLabel(insertion.anchorHumanPosition, humanLength);
     const containsUnknown = /[^ACGUT]/i.test(insertion.insertedBases);
     const sourceUrl = insertion.species.source_url || (insertion.species.accession
@@ -958,9 +974,9 @@
         <span>MSA列<strong>${(insertion.startColumn + 1).toLocaleString()}–${(insertion.endColumn + 1).toLocaleString()}</strong></span>
         <span>来源<strong>${source}</strong></span>
       </div>
-      <div class="insertion-sequence-block"><span>去除 gap 后的序列${containsUnknown ? " · 含未知碱基" : ""}</span><pre>${escapeHtml(formatInsertionSequence(insertion.insertedBases))}</pre></div>
-      <details class="insertion-aligned-fragment"><summary>查看 MSA 原始片段</summary><pre>${escapeHtml(formatInsertionSequence(insertion.alignedFragment))}</pre></details>
-      <p class="insertion-caveat">该标记表示人源在这些 MSA 列为 gap，而该物种含有碱基；它可能来自真实插入、人源缺失或局部比对不确定性，不直接等同于已确认的进化新增。</p>`;
+      <div class="insertion-sequence-block"><span>展开序列（已去除 gap，N 按 - 处理）${containsUnknown ? " · 含其他未知碱基" : ""}</span><pre>${escapeHtml(formatInsertionSequence(insertion.insertedBases))}</pre></div>
+      <details class="insertion-aligned-fragment"><summary>查看对应 MSA 片段（N 已显示为 -）</summary><pre>${escapeHtml(formatInsertionSequence(insertion.alignedFragment))}</pre></details>
+      <p class="insertion-caveat">该数字表示这些人源 gap 列中可见的额外碱基数。它可能来自真实插入、人源缺失或局部比对不确定性，不直接等同于已确认的进化新增。</p>`;
     if (!dialog.open) dialog.showModal();
   }
 
@@ -989,7 +1005,7 @@
       state.alignmentRenderKey = null;
       return;
     }
-    document.getElementById("selectionSubtitle").textContent = `${state.currentEs} · ES内 ${humanCoordinateText(selected)} · 人28S ${humanAbsoluteCoordinateText(selected)} · ${selected.size} nt`;
+    document.getElementById("selectionSubtitle").textContent = `${state.currentEs} · 人28S ${humanAbsoluteCoordinateText(selected)} · ${selected.size} nt`;
     document.getElementById("selectedScore").textContent = scoreFmt(selected.score);
     document.getElementById("selectedLowEntropy").textContent = scoreFmt(selected.lowEntropy);
     document.getElementById("selectedCoverage").textContent = pct(selected.coverage);
@@ -1016,30 +1032,18 @@
     const humanEnd = window.humanEnd ?? window.human_es_end ?? Math.min(humanLength, humanStart + window.size - 1);
     const insertionBlocks = humanInsertionBlocks(human.sequence);
     const insertionEvents = new Map();
+    const detailed = state.alignmentMode === "focus";
+    const projectedHuman = projectSequenceForDisplay(human.sequence, humanMap.alignmentColumns);
     closeInsertionDialog();
-    const focusPadding = 60;
-    const sliceStart = state.alignmentMode === "focus" ? Math.max(0, window.start - focusPadding) : 0;
-    const sliceEnd = state.alignmentMode === "focus" ? Math.min(alignmentLength, window.end + focusPadding + 1) : alignmentLength;
-    const displayHuman = human.sequence.slice(sliceStart, sliceEnd);
-    const makeDetailedBases = (sequence, isHuman = false) => sequence.slice(sliceStart, sliceEnd).split("").map((base, localIndex) => {
-      const globalIndex = sliceStart + localIndex;
-      const classes = ["base"];
-      if (isHuman) classes.push("human-base");
-      else if (base === "-") classes.push("gap");
-      else if (displayHuman[localIndex] === "-") classes.push("insertion-base");
-      else if (base !== displayHuman[localIndex]) classes.push("mismatch");
-      if (globalIndex >= window.start && globalIndex <= window.end) classes.push("selected-base");
-      return `<span class="${classes.join(" ")}">${base}</span>`;
-    }).join("");
-    const makeOverviewBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
-      const projected = humanMap.alignmentColumns.map(column => sequence[column]).join("");
-      const before = projected.slice(0, humanStart - 1);
-      const selected = projected.slice(humanStart - 1, humanEnd);
-      const after = projected.slice(humanEnd);
-      const markers = isHuman ? "" : insertionBlocks.map((block, blockIndex) => {
-        const alignedFragment = sequence.slice(block.startColumn, block.endColumn + 1);
+
+    const makeInsertionMarkers = (sequence, species, speciesIndex) => {
+      const laneEnds = [];
+      const cellWidth = detailed ? 15 : 6.65;
+      const markers = insertionBlocks.map((block, blockIndex) => {
+        const alignedFragment = sequence.slice(block.startColumn, block.endColumn + 1)
+          .split("").map(displayBase).join("");
         const insertedBases = alignedFragment.replaceAll("-", "");
-        if (!/[ACGUT]/i.test(insertedBases)) return "";
+        if (!insertedBases.length) return "";
         const insertionId = `ins-${speciesIndex}-${blockIndex}`;
         const insertion = { ...block, alignedFragment, insertedBases, species };
         insertionEvents.set(insertionId, insertion);
@@ -1047,41 +1051,70 @@
         const selectedClass = block.anchorHumanPosition >= humanStart && block.anchorHumanPosition < humanEnd
           ? " selected-insertion"
           : "";
-        const label = `${species.name}：${anchor}，相对人源额外 ${insertedBases.length} nt`;
-        return `<button type="button" class="overview-insertion-marker${selectedClass}" style="left:${block.anchorHumanPosition}ch" data-insertion-id="${insertionId}" aria-label="${escapeHtml(label)}" aria-controls="insertionDialog" aria-expanded="false" title="${escapeHtml(label)}"></button>`;
+        const markerText = `+${insertedBases.length}`;
+        const markerWidth = Math.max(26, markerText.length * 5.2 + 10);
+        const markerCenter = block.anchorHumanPosition * cellWidth;
+        const markerStart = markerCenter - markerWidth / 2;
+        let lane = laneEnds.findIndex(end => markerStart >= end + 3);
+        if (lane < 0) lane = laneEnds.length;
+        laneEnds[lane] = markerCenter + markerWidth / 2;
+        const label = `${species.name}：${anchor}，折叠 ${insertedBases.length} nt，点击展开`;
+        const left = detailed
+          ? `${block.anchorHumanPosition * 15}px`
+          : `${block.anchorHumanPosition / Math.max(1, humanLength) * 100}%`;
+        return `<button type="button" class="insertion-count-marker${detailed ? " detailed-insertion" : " overview-insertion"}${selectedClass}" style="left:${left};--marker-lane:${lane}" data-insertion-id="${insertionId}" aria-label="${escapeHtml(label)}" aria-controls="insertionDialog" aria-expanded="false" title="${escapeHtml(label)}">${markerText}</button>`;
       }).join("");
-      return `<span class="overview-sequence${isHuman ? " human-base" : ""}"><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers}</span>`;
+      return { html: markers, laneCount: laneEnds.length };
     };
-    const makeBases = state.alignmentMode === "focus"
-      ? makeDetailedBases
-      : makeOverviewBases;
-    viewer.classList.toggle("alignment-overview", state.alignmentMode === "full");
+
+    const makeDetailedBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
+      const projected = projectSequenceForDisplay(sequence, humanMap.alignmentColumns);
+      const bases = projected.split("").map((base, localIndex) => {
+      const classes = ["base"];
+      if (isHuman) classes.push("human-base");
+      else if (base === "-") classes.push("gap");
+      else if (base !== projectedHuman[localIndex]) classes.push("mismatch");
+      if (localIndex >= humanStart - 1 && localIndex < humanEnd) classes.push("selected-base");
+      return `<span class="${classes.join(" ")}">${escapeHtml(base)}</span>`;
+      }).join("");
+      const markers = isHuman ? { html: "", laneCount: 0 } : makeInsertionMarkers(sequence, species, speciesIndex);
+      const markerClass = markers.laneCount ? " has-insertions" : "";
+      const markerStyle = markers.laneCount ? ` style="--marker-lanes:${markers.laneCount}"` : "";
+      return `<span class="detail-sequence${isHuman ? " human-base" : ""}${markerClass}"${markerStyle}>${bases}${markers.html}</span>`;
+    };
+
+    const makeOverviewBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
+      const projected = projectSequenceForDisplay(sequence, humanMap.alignmentColumns);
+      const before = escapeHtml(projected.slice(0, humanStart - 1));
+      const selected = escapeHtml(projected.slice(humanStart - 1, humanEnd));
+      const after = escapeHtml(projected.slice(humanEnd));
+      const markers = isHuman ? { html: "", laneCount: 0 } : makeInsertionMarkers(sequence, species, speciesIndex);
+      const markerClass = markers.laneCount ? " has-insertions" : "";
+      const markerStyle = markers.laneCount ? ` style="--marker-lanes:${markers.laneCount}"` : "";
+      return `<span class="overview-sequence${isHuman ? " human-base" : ""}${markerClass}"${markerStyle}><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers.html}</span>`;
+    };
+    const makeBases = detailed ? makeDetailedBases : makeOverviewBases;
+    viewer.classList.toggle("alignment-detail", detailed);
+    viewer.classList.toggle("alignment-overview", !detailed);
     const rows = [
-      state.alignmentMode === "focus"
-        ? renderCoordinateRuler(human.sequence, alignmentLength, sliceStart, sliceEnd)
-        : `<div class="alignment-row overview-ruler-row"><span class="alignment-label">人源ES全长</span><span class="overview-range">1–${humanLength} nt · 选中 ${humanStart}–${humanEnd} · 人源 gap 列已折叠</span></div>`,
+      renderProjectedCoordinateRuler(humanLength, state.alignmentMode),
       `<div class="alignment-row human-row"><a class="alignment-label source-anchor" href="${human.source_url || `https://www.ncbi.nlm.nih.gov/nuccore/${human.accession || "NR_003287.4"}`}" target="_blank" rel="noopener" title="打开 ${human.accession || "NR_003287.4"} 原始记录">Homo sapiens</a><span class="alignment-bases">${makeBases(human.sequence, true)}</span></div>`
     ];
     const conservation = cachedConstraintProfile(window.size, "score", alignmentLength);
     const lowEntropyColumns = cachedConstraintProfile(window.size, "lowEntropy", alignmentLength);
-    rows.push('<div class="alignment-divider"><span>完整缓存代表峰的窗口约束轨道</span></div>');
-    if (state.alignmentMode === "full") {
-      rows.push(renderHumanProjectedConstraintTrack("保守性", conservation, window, "conservation", humanMap.alignmentColumns));
-      rows.push(renderHumanProjectedConstraintTrack("结构低熵", lowEntropyColumns, window, "entropy", humanMap.alignmentColumns));
-      rows.push('<div class="alignment-divider species-divider"><span>其他物种的人源坐标投影</span><small>相对人源的额外 MSA 片段已折叠为蓝色插入候选标记</small></div>');
-    } else {
-      rows.push(renderConstraintTrack("保守性", conservation, window, "conservation", sliceStart, sliceEnd));
-      rows.push(renderConstraintTrack("结构低熵", lowEntropyColumns, window, "entropy", sliceStart, sliceEnd));
-      rows.push('<div class="alignment-divider species-divider"><span>其他物种原始比对序列</span><small>相对人源：近缘在上 · 远缘在下 · 同层先按系统发育组、组内按拉丁学名 · 未映射置后</small></div>');
-    }
+    rows.push('<div class="alignment-divider"><span>当前窗口与全长位点约束</span></div>');
+    rows.push(renderProjectedConstraintTrack("轨道一", "目平衡保守性", conservation, window, "conservation", humanMap.alignmentColumns, state.alignmentMode));
+    rows.push(renderProjectedConstraintTrack("轨道二", "结构低熵", lowEntropyColumns, window, "entropy", humanMap.alignmentColumns, state.alignmentMode));
+    const densityLabel = detailed ? "详细全长" : "紧凑概览";
+    rows.push(`<div class="alignment-divider species-divider"><span>其他物种 · ${densityLabel}</span><small>N 统一显示为 -；相对人源额外片段以 +长度 折叠，点击数字展开</small></div>`);
     sequences.filter(species => species !== human).sort(compareByHumanPhylogeneticDistance).forEach((species, speciesIndex) => {
       const sourceUrl = species.source_url || (species.accession ? `https://www.ncbi.nlm.nih.gov/nuccore/${species.accession}` : "");
       const taxon = taxonomyFor(species);
       const phylogeneticPositionData = phylogeneticPosition(species);
-      const labelInner = `<span class="species-name">${species.name}</span><small>${taxon.label} · ${taxon.scoring ? "计分" : "仅展示"}</small>`;
+      const labelInner = `<span class="species-name">${escapeHtml(species.name)}</span><small>${escapeHtml(taxon.label)}</small>`;
       const label = sourceUrl
-        ? `<a class="alignment-label source-anchor taxon-label" style="--taxon-color:${taxon.color}" href="${sourceUrl}" target="_blank" rel="noopener" title="打开 ${species.accession || species.name} 原始记录">${labelInner}</a>`
-        : `<span class="alignment-label taxon-label" style="--taxon-color:${taxon.color}" title="${species.name}">${labelInner}</span>`;
+        ? `<a class="alignment-label source-anchor taxon-label" style="--taxon-color:${taxon.color}" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener" title="打开 ${escapeHtml(species.accession || species.name)} 原始记录">${labelInner}</a>`
+        : `<span class="alignment-label taxon-label" style="--taxon-color:${taxon.color}" title="${escapeHtml(species.name)}">${labelInner}</span>`;
       rows.push(`<div class="alignment-row taxon-row" data-phylogenetic-tier="${phylogeneticPositionData.distanceTier}" style="--taxon-color:${taxon.color}">${label}<span class="alignment-bases">${makeBases(species.sequence, false, species, speciesIndex)}</span></div>`);
     });
     viewer.innerHTML = rows.join("");
@@ -1103,8 +1136,8 @@
     const overviewCellWidth = overviewSequence && humanLength
       ? overviewSequence.getBoundingClientRect().width / humanLength
       : 7.25;
-    const target = state.alignmentMode === "focus"
-      ? Math.max(0, (window.start - sliceStart) * 15 - viewer.clientWidth * 0.35)
+    const target = detailed
+      ? Math.max(0, (humanStart - 1) * 15 - viewer.clientWidth * 0.35)
       : Math.max(0, (humanStart - 1) * overviewCellWidth - viewer.clientWidth * 0.35);
     viewer.scrollLeft = target;
   }
@@ -1121,23 +1154,30 @@
     return sums.map((value, index) => counts[index] ? value / counts[index] : null);
   }
 
-  function renderCoordinateRuler(humanSequence, alignmentLength, sliceStart = 0, sliceEnd = alignmentLength) {
-    const width = (sliceEnd - sliceStart) * 15;
-    let humanPosition = 0;
-    const ticks = [];
-    for (let column = 0; column < alignmentLength; column++) {
-      if (humanSequence[column] !== "-") humanPosition++;
-      if (column >= sliceStart && column < sliceEnd && humanSequence[column] !== "-" && (humanPosition === 1 || humanPosition % 25 === 0)) {
-        const x = (column - sliceStart) * 15 + 7.5;
-        ticks.push(`<line x1="${x}" x2="${x}" y1="19" y2="25"></line><text x="${x}" y="14">${humanPosition}</text>`);
-      }
+  function renderProjectedCoordinateRuler(humanLength, mode = "focus") {
+    const compact = mode === "full";
+    const absoluteStart = humanAbsolutePosition(1);
+    const absoluteEnd = humanAbsolutePosition(humanLength);
+    const interval = compact ? (humanLength > 300 ? 100 : 50) : 25;
+    const positions = new Set([1, humanLength]);
+    const firstRoundCoordinate = Math.ceil(absoluteStart / interval) * interval;
+    for (let coordinate = firstRoundCoordinate; coordinate <= absoluteEnd; coordinate += interval) {
+      positions.add(coordinate - absoluteStart + 1);
     }
-    return `<div class="alignment-row ruler-row"><span class="alignment-label">人源位置</span><span class="sequence-ruler"><svg width="${width}" height="26" viewBox="0 0 ${width} 26" aria-label="人源ES坐标尺"><line x1="0" x2="${width}" y1="25" y2="25"></line>${ticks.join("")}</svg></span></div>`;
+    const width = compact ? `${humanLength}ch` : `${humanLength * 15}px`;
+    const ticks = [...positions].filter(position => position >= 1 && position <= humanLength).sort((a, b) => a - b).map(position => {
+      const left = compact ? `${position - 0.5}ch` : `${(position - 1) * 15 + 7.5}px`;
+      const edgeClass = position === 1 ? " edge-start" : position === humanLength ? " edge-end" : "";
+      return `<span class="projected-ruler-tick${edgeClass}" style="left:${left}"><b>${humanAbsolutePosition(position)}</b></span>`;
+    }).join("");
+    return `<div class="alignment-row ruler-row projected-ruler-row"><span class="alignment-label">人28S位置</span><span class="projected-ruler" style="width:${width}" role="img" aria-label="人28S坐标尺 ${absoluteStart}至${absoluteEnd}">${ticks}</span></div>`;
   }
 
-  function renderHumanProjectedConstraintTrack(label, values, window, type, humanColumns) {
+  function renderProjectedConstraintTrack(trackNumber, label, values, window, type, humanColumns, mode = "focus") {
     const visibleValues = humanColumns.map(column => values[column]);
-    const width = visibleValues.length;
+    const compact = mode === "full";
+    const cellWidth = compact ? 1 : 15;
+    const width = visibleValues.length * cellWidth;
     const height = 48;
     const top = 5;
     const plotHeight = 35;
@@ -1147,32 +1187,17 @@
       if (!Number.isFinite(value)) { drawing = false; return ""; }
       const command = drawing ? "L" : "M";
       drawing = true;
-      return `${command}${(index + 0.5).toFixed(1)},${y(value).toFixed(1)}`;
+      return `${command}${(index * cellWidth + cellWidth / 2).toFixed(1)},${y(value).toFixed(1)}`;
     }).filter(Boolean).join(" ");
     const humanStart = window.humanStart ?? window.human_es_start ?? 1;
     const humanEnd = window.humanEnd ?? window.human_es_end ?? humanStart + window.size - 1;
-    const selectedX = Math.max(0, humanStart - 1);
-    const selectedWidth = Math.max(1, humanEnd - humanStart + 1);
-    return `<div class="alignment-row constraint-row ${type}-constraint"><span class="alignment-label constraint-label"><strong>${label}</strong><small>0–100 · 人源坐标投影</small></span><span class="constraint-plot projected-constraint"><svg width="${width}ch" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="${label}人源坐标投影曲线"><rect class="constraint-selection" x="${selectedX}" y="0" width="${selectedWidth}" height="${height}"></rect><line class="constraint-grid" x1="0" x2="${width}" y1="${y(50)}" y2="${y(50)}"></line><path class="constraint-path" d="${path}"></path></svg></span></div>`;
-  }
-
-  function renderConstraintTrack(label, values, window, type, sliceStart = 0, sliceEnd = values.length) {
-    const visibleValues = values.slice(sliceStart, sliceEnd);
-    const width = visibleValues.length * 15;
-    const height = 48;
-    const top = 5;
-    const plotHeight = 35;
-    const y = value => top + (1 - Math.max(0, Math.min(100, value)) / 100) * plotHeight;
-    let drawing = false;
-    const path = visibleValues.map((value, index) => {
-      if (!Number.isFinite(value)) { drawing = false; return ""; }
-      const command = drawing ? "L" : "M";
-      drawing = true;
-      return `${command}${(index * 15 + 7.5).toFixed(1)},${y(value).toFixed(1)}`;
-    }).filter(Boolean).join(" ");
-    const selectedX = (window.start - sliceStart) * 15;
-    const selectedWidth = (window.end - window.start + 1) * 15;
-    return `<div class="alignment-row constraint-row ${type}-constraint"><span class="alignment-label constraint-label"><strong>${label}</strong><small>0–100 · 离线缓存</small></span><span class="constraint-plot"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}缓存代表峰曲线"><rect class="constraint-selection" x="${selectedX}" y="0" width="${selectedWidth}" height="${height}"></rect><line class="constraint-grid" x1="0" x2="${width}" y1="${y(50)}" y2="${y(50)}"></line><path class="constraint-path" d="${path}"></path></svg></span></div>`;
+    const selectedX = Math.max(0, humanStart - 1) * cellWidth;
+    const selectedWidth = Math.max(1, humanEnd - humanStart + 1) * cellWidth;
+    const score = type === "conservation" ? window.score : window.lowEntropy;
+    const svgWidth = compact ? `${visibleValues.length}ch` : `${width}`;
+    const preserveAspectRatio = compact ? ' preserveAspectRatio="none"' : "";
+    const trackColor = type === "conservation" ? "var(--blue)" : "var(--teal)";
+    return `<div class="alignment-row constraint-row ${type}-constraint" style="--constraint-color:${windowColor(window.size)};--track-color:${trackColor}"><span class="alignment-label constraint-label"><strong><b>${trackNumber}</b><span>${label}</span></strong><small>当前窗口 <em>${scoreFmt(score)}</em> · 0–100</small></span><span class="constraint-plot projected-constraint ${compact ? "compact-projected" : "detailed-projected"}"><svg width="${svgWidth}" height="${height}" viewBox="0 0 ${width} ${height}"${preserveAspectRatio} role="img" aria-label="${trackNumber}${label}人28S坐标投影曲线，当前窗口得分${scoreFmt(score)}"><rect class="constraint-selection" x="${selectedX}" y="0" width="${selectedWidth}" height="${height}"></rect><line class="constraint-grid" x1="0" x2="${width}" y1="${y(50)}" y2="${y(50)}"></line><path class="constraint-path" d="${path}"></path></svg></span></div>`;
   }
 
   function markStatisticsDirty() {
