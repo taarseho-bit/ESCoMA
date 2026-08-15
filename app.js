@@ -15,9 +15,75 @@
     Proboscidea: { label: "长鼻目", color: "#625C57" },
     Cingulata: { label: "有甲目", color: "#B23A73" },
     Didelphimorphia: { label: "负鼠目", color: "#8A4E20" },
-    Mammalia: { label: "哺乳纲 · 目未定", color: "#52616B" },
-    Other: { label: "其他类群 · 仅展示", color: "#9AA2A8" }
+    Mammalia: { label: "哺乳纲 · 系统位置未映射", color: "#52616B" },
+    Aves: { label: "鸟纲 · 仅展示", color: "#3A6F8F" },
+    Reptilia: { label: "爬行类 · 仅展示", color: "#777D2D" },
+    Amphibia: { label: "两栖纲 · 仅展示", color: "#31805F" },
+    Actinopterygii: { label: "辐鳍鱼纲 · 仅展示", color: "#277DA1" },
+    Chondrichthyes: { label: "软骨鱼纲 · 仅展示", color: "#756A78" },
+    Vertebrata: { label: "其他脊椎动物 · 仅展示", color: "#5D6D79" },
+    Metazoa: { label: "其他动物 · 仅展示", color: "#8A6742" },
+    Eukaryota: { label: "其他真核生物 · 仅展示", color: "#76699A" },
+    Other: { label: "系统位置未映射 · 仅展示", color: "#9AA2A8" }
   };
+
+  // Relative to the human lineage. Orders in the same distance tier share the
+  // same human-facing ancestor; displayRank only keeps sister groups stable.
+  const HUMAN_PHYLOGENETIC_ORDER = {
+    Human: { distanceTier: -1, displayRank: 0 },
+    Primates: { distanceTier: 0, displayRank: 0 },
+    Lagomorpha: { distanceTier: 1, displayRank: 0 },
+    Rodentia: { distanceTier: 1, displayRank: 1 },
+    Eulipotyphla: { distanceTier: 2, displayRank: 0 },
+    Chiroptera: { distanceTier: 2, displayRank: 1 },
+    Perissodactyla: { distanceTier: 2, displayRank: 2 },
+    Cetartiodactyla: { distanceTier: 2, displayRank: 3 },
+    Carnivora: { distanceTier: 2, displayRank: 4 },
+    Proboscidea: { distanceTier: 3, displayRank: 0 },
+    Cingulata: { distanceTier: 3, displayRank: 1 },
+    Didelphimorphia: { distanceTier: 4, displayRank: 0 },
+    Mammalia: { distanceTier: 5, displayRank: 0 },
+    Aves: { distanceTier: 6, displayRank: 0 },
+    Reptilia: { distanceTier: 6, displayRank: 1 },
+    Amphibia: { distanceTier: 7, displayRank: 0 },
+    Actinopterygii: { distanceTier: 8, displayRank: 0 },
+    Chondrichthyes: { distanceTier: 9, displayRank: 0 },
+    Vertebrata: { distanceTier: 10, displayRank: 0 },
+    Metazoa: { distanceTier: 11, displayRank: 0 },
+    Eukaryota: { distanceTier: 12, displayRank: 0 },
+    Other: { distanceTier: 13, displayRank: 0 }
+  };
+
+  const NON_MAMMAL_TAXON_RULES = [
+    { key: "Aves", clades: ["Aves"] },
+    { key: "Reptilia", clades: ["Reptilia", "Sauropsida"] },
+    { key: "Amphibia", clades: ["Amphibia"] },
+    { key: "Actinopterygii", clades: ["Actinopterygii"] },
+    { key: "Chondrichthyes", clades: ["Chondrichthyes"] },
+    { key: "Vertebrata", clades: ["Vertebrata"] },
+    { key: "Metazoa", clades: ["Metazoa"] },
+    { key: "Eukaryota", clades: ["Eukaryota"] }
+  ];
+
+  const PRIMATE_PROXIMITY_BY_GENUS = {
+    Pan: 0,
+    Gorilla: 1,
+    Pongo: 2,
+    Nomascus: 3,
+    Cercocebus: 4,
+    Chlorocebus: 4,
+    Colobus: 4,
+    Macaca: 4,
+    Mandrillus: 4,
+    Papio: 4,
+    Rhinopithecus: 4,
+    Theropithecus: 4,
+    Callithrix: 5,
+    Cebus: 5,
+    Microcebus: 6
+  };
+
+  const SPECIES_NAME_COLLATOR = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 
   const state = {
     datasets: {},
@@ -313,9 +379,33 @@
   function taxonomyFor(species) {
     if (/^Homo sapiens$/i.test(species.name)) return { key: "Human", label: "人源参考", color: "#243E55", scoring: false };
     const mammal = species.clades?.includes("Mammalia") || species.lineage === "Mammalia";
-    const key = mammal ? (species.order || "Mammalia") : "Other";
-    const style = TAXON_STYLES[key] || TAXON_STYLES.Other;
+    const lineage = new Set([species.lineage, ...(species.clades || [])].filter(Boolean));
+    const nonMammalKey = NON_MAMMAL_TAXON_RULES.find(rule => rule.clades.some(clade => lineage.has(clade)))?.key || "Other";
+    const key = mammal ? (species.order || "Mammalia") : nonMammalKey;
+    const style = TAXON_STYLES[key] || (mammal ? TAXON_STYLES.Mammalia : TAXON_STYLES.Other);
     return { key, ...style, scoring: mammal && Boolean(species.order) };
+  }
+
+  function phylogeneticPosition(species) {
+    const taxon = taxonomyFor(species);
+    const mammal = species.clades?.includes("Mammalia") || species.lineage === "Mammalia";
+    const orderPosition = HUMAN_PHYLOGENETIC_ORDER[taxon.key] ||
+      HUMAN_PHYLOGENETIC_ORDER[mammal ? "Mammalia" : "Other"];
+    const genus = String(species.name || "").trim().split(/\s+/)[0];
+    const withinOrderRank = taxon.key === "Primates"
+      ? (PRIMATE_PROXIMITY_BY_GENUS[genus] ?? Number.MAX_SAFE_INTEGER)
+      : 0;
+    return { ...orderPosition, withinOrderRank };
+  }
+
+  function compareByHumanPhylogeneticDistance(a, b) {
+    const positionA = phylogeneticPosition(a);
+    const positionB = phylogeneticPosition(b);
+    return positionA.distanceTier - positionB.distanceTier ||
+      positionA.displayRank - positionB.displayRank ||
+      positionA.withinOrderRank - positionB.withinOrderRank ||
+      SPECIES_NAME_COLLATOR.compare(String(a.name || a.accession || ""), String(b.name || b.accession || "")) ||
+      SPECIES_NAME_COLLATOR.compare(String(a.taxid || ""), String(b.taxid || ""));
   }
 
   function findHumanSequence(sequences) {
@@ -594,7 +684,13 @@
       const taxon = taxonomyFor(species);
       counts.set(taxon.key, { ...taxon, count: (counts.get(taxon.key)?.count || 0) + 1 });
     });
-    legend.innerHTML = [...counts.values()].map(item => `
+    legend.innerHTML = [...counts.values()].sort((a, b) => {
+      const positionA = HUMAN_PHYLOGENETIC_ORDER[a.key] || HUMAN_PHYLOGENETIC_ORDER[a.scoring ? "Mammalia" : "Other"];
+      const positionB = HUMAN_PHYLOGENETIC_ORDER[b.key] || HUMAN_PHYLOGENETIC_ORDER[b.scoring ? "Mammalia" : "Other"];
+      return positionA.distanceTier - positionB.distanceTier ||
+        positionA.displayRank - positionB.displayRank ||
+        SPECIES_NAME_COLLATOR.compare(a.label, b.label);
+    }).map(item => `
       <span style="--taxon-color:${item.color}"><i></i><b>${item.label}</b><small>${item.count}种${item.scoring ? " · 计分" : " · 仅展示"}</small></span>`).join("");
   }
 
@@ -879,19 +975,16 @@
     rows.push('<div class="alignment-divider"><span>完整缓存代表峰的窗口约束轨道</span></div>');
     rows.push(renderConstraintTrack("保守性", conservation, window, "conservation", sliceStart, sliceEnd));
     rows.push(renderConstraintTrack("结构低熵", lowEntropyColumns, window, "entropy", sliceStart, sliceEnd));
-    rows.push('<div class="alignment-divider species-divider"><span>其他物种原始比对序列</span></div>');
-    sequences.filter(species => species !== human).sort((a, b) => {
-      const taxonA = taxonomyFor(a);
-      const taxonB = taxonomyFor(b);
-      return taxonA.key.localeCompare(taxonB.key) || a.name.localeCompare(b.name);
-    }).forEach(species => {
+    rows.push('<div class="alignment-divider species-divider"><span>其他物种原始比对序列</span><small>相对人源：近缘在上 · 远缘在下 · 同层先按系统发育组、组内按拉丁学名 · 未映射置后</small></div>');
+    sequences.filter(species => species !== human).sort(compareByHumanPhylogeneticDistance).forEach(species => {
       const sourceUrl = species.source_url || (species.accession ? `https://www.ncbi.nlm.nih.gov/nuccore/${species.accession}` : "");
       const taxon = taxonomyFor(species);
+      const phylogeneticPositionData = phylogeneticPosition(species);
       const labelInner = `<span class="species-name">${species.name}</span><small>${taxon.label} · ${taxon.scoring ? "计分" : "仅展示"}</small>`;
       const label = sourceUrl
         ? `<a class="alignment-label source-anchor taxon-label" style="--taxon-color:${taxon.color}" href="${sourceUrl}" target="_blank" rel="noopener" title="打开 ${species.accession || species.name} 原始记录">${labelInner}</a>`
         : `<span class="alignment-label taxon-label" style="--taxon-color:${taxon.color}" title="${species.name}">${labelInner}</span>`;
-      rows.push(`<div class="alignment-row taxon-row" style="--taxon-color:${taxon.color}">${label}<span class="alignment-bases">${makeBases(species.sequence)}</span></div>`);
+      rows.push(`<div class="alignment-row taxon-row" data-phylogenetic-tier="${phylogeneticPositionData.distanceTier}" style="--taxon-color:${taxon.color}">${label}<span class="alignment-bases">${makeBases(species.sequence)}</span></div>`);
     });
     viewer.innerHTML = rows.join("");
     const target = state.alignmentMode === "focus"
