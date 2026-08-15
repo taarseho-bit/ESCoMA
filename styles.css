@@ -13,6 +13,7 @@
   --mustard: #a67c37;
   --violet: #856a9d;
   --blue: #245b78;
+  --insertion: #0072b2;
   --navy: #17324d;
   --shadow: 0 6px 18px rgba(23, 50, 77, 0.06);
   font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", sans-serif;
@@ -368,6 +369,7 @@ tbody tr.selected { background: #dcefeb; box-shadow: inset 3px 0 var(--teal); }
 .alignment-key .mismatch-key { background: rgba(199,91,77,.12); border-bottom-color: var(--coral); }
 .alignment-key b { color: var(--line-strong); }
 .alignment-key .human-key { width: 14px; height: 3px; background: var(--navy); }
+.alignment-key .insertion-key { width: 3px; height: 14px; background: var(--insertion); border: 0; box-shadow: 0 0 0 1px rgba(0, 114, 178, .14); }
 .taxon-legend { display: flex; flex-wrap: wrap; gap: 7px 16px; margin: 8px 0; padding: 8px 10px; background: #f4f6f7; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .taxon-legend span { display: inline-grid; grid-template-columns: 10px auto; grid-template-rows: auto auto; column-gap: 7px; align-items: center; }
 .taxon-legend i { grid-row: 1 / 3; width: 10px; height: 25px; background: var(--taxon-color); border: 1px solid color-mix(in srgb, var(--taxon-color) 78%, black); }
@@ -394,14 +396,21 @@ tbody tr.selected { background: #dcefeb; box-shadow: inset 3px 0 var(--teal); }
 .alignment-bases { display: flex; padding-right: 12px; }
 .base { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 18px; color: var(--ink); }
 .base.mismatch { color: var(--coral); background: rgba(199, 91, 77, .08); }
+.base.insertion-base { color: var(--insertion); background: rgba(0, 114, 178, .09); box-shadow: inset 0 -2px var(--insertion); }
 .base.gap { color: var(--line-strong); }
 .base.selected-base { background: rgba(166, 124, 55, .12); box-shadow: inset 0 -2px var(--mustard); }
 .base.selected-base.mismatch { background: rgba(138, 79, 75, .14); }
 .alignment-overview .alignment-row { min-height: 24px; }
 .alignment-overview .alignment-bases { display: block; padding: 2px 12px 2px 6px; white-space: pre; }
-.overview-sequence { display: inline; color: var(--ink); font: 11px/20px "Cascadia Mono", Consolas, monospace; white-space: pre; }
+.overview-sequence { position: relative; display: inline-block; color: var(--ink); font: 11px/20px "Cascadia Mono", Consolas, monospace; font-variant-ligatures: none; white-space: pre; }
 .overview-sequence.human-base { color: var(--navy); font-weight: 700; }
 .overview-selected { color: var(--navy); background: rgba(166, 124, 55, .18); box-shadow: inset 0 -2px var(--mustard); }
+.overview-insertion-marker { position: absolute; top: 0; z-index: 3; width: 14px; height: 20px; padding: 0; transform: translateX(-7px); background: transparent; border: 0; }
+.overview-insertion-marker::before { content: ""; position: absolute; top: 1px; bottom: 1px; left: 6px; width: 2px; background: var(--insertion); box-shadow: 0 0 0 1px rgba(255, 255, 255, .72); }
+.overview-insertion-marker::after { content: ""; position: absolute; top: 0; left: 4px; width: 6px; height: 3px; background: var(--insertion); }
+.overview-insertion-marker:hover::before, .overview-insertion-marker.active::before { left: 5px; width: 4px; }
+.overview-insertion-marker:focus-visible { outline: 2px solid var(--insertion); outline-offset: 1px; }
+.overview-insertion-marker.selected-insertion::after { background: var(--mustard); }
 .overview-ruler-row { min-height: 28px; }
 .overview-range { padding: 5px 8px; color: var(--muted); font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif; font-size: 10px; }
 .alignment-row.human-row { background: #edf3f5; border-top: 1px solid var(--line); }
@@ -427,6 +436,7 @@ tbody tr.selected { background: #dcefeb; box-shadow: inset 3px 0 var(--teal); }
 .constraint-label small { margin-top: 2px; color: var(--muted); font-size: 9px; font-weight: 400; }
 .constraint-plot { display: block; height: 48px; }
 .constraint-plot svg { display: block; overflow: visible; }
+.projected-constraint { margin-left: 6px; font: 11px/20px "Cascadia Mono", Consolas, monospace; font-variant-ligatures: none; }
 .constraint-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; }
 .constraint-threshold { stroke: var(--mustard); stroke-width: 1; stroke-dasharray: 4 3; }
 .constraint-selection { fill: rgba(166, 124, 55, .1); }
@@ -639,6 +649,20 @@ tbody tr.selected { background: #dcefeb; box-shadow: inset 3px 0 var(--teal); }
 
 dialog { width: min(760px, calc(100% - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 24px 80px rgba(16, 36, 32, .28); }
 dialog::backdrop { background: rgba(14, 28, 25, .55); }
+.insertion-dialog-panel { padding: 22px; border-top: 4px solid var(--insertion); }
+.insertion-dialog-panel .dialog-heading { align-items: flex-start; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.insertion-dialog-panel .dialog-heading h2 { margin-top: 4px; font-size: 17px; }
+.insertion-dialog-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.insertion-dialog-metrics span { min-width: 0; padding: 10px 12px; color: var(--muted); border-right: 1px solid var(--line); font-size: 9px; }
+.insertion-dialog-metrics span:last-child { border-right: 0; }
+.insertion-dialog-metrics strong { display: block; margin-top: 5px; color: var(--ink); font-size: 11px; overflow-wrap: anywhere; }
+.insertion-dialog-metrics a { color: var(--teal-dark); }
+.insertion-sequence-block { margin-top: 16px; }
+.insertion-sequence-block > span { color: var(--navy); font-size: 10px; font-weight: 800; }
+.insertion-sequence-block pre, .insertion-aligned-fragment pre { max-height: 210px; margin: 7px 0 0; padding: 11px 12px; overflow: auto; color: var(--ink); background: #f4f7f8; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 10px/1.7 "Cascadia Mono", Consolas, monospace; white-space: pre; }
+.insertion-aligned-fragment { margin-top: 12px; color: var(--muted); font-size: 10px; }
+.insertion-aligned-fragment summary { color: var(--teal-dark); cursor: pointer; font-weight: 700; }
+.insertion-caveat { margin-top: 14px; padding-left: 10px; color: var(--muted); border-left: 3px solid var(--mustard); font-size: 10px; line-height: 1.65; }
 #importForm { padding: 22px; }
 .dialog-heading { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
 .close-button { width: 34px; height: 34px; border: 0; background: transparent; color: var(--muted); font-size: 24px; }
@@ -742,6 +766,10 @@ dialog::backdrop { background: rgba(14, 28, 25, .55); }
   .database-layer-stats article:nth-child(-n+4) { border-bottom: 1px solid var(--line); }
   .coverage-chart { grid-template-columns: 1fr; }
   .species-coverage-row { grid-template-columns: 140px minmax(70px, 1fr) 38px; }
+  .insertion-dialog-panel { padding: 16px; }
+  .insertion-dialog-metrics { grid-template-columns: 1fr 1fr; }
+  .insertion-dialog-metrics span:nth-child(2) { border-right: 0; }
+  .insertion-dialog-metrics span:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
 }
 
 @media (max-width: 420px) {

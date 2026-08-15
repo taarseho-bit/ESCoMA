@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f5f7f8">
   <link rel="icon" type="image/svg+xml" href="assets/brand/escoma-mark-app-light.svg?v=brand-v1">
   <title>ESCoMA｜扩增区段保守模块图谱</title>
-  <link rel="stylesheet" href="styles.css?v=human-phylogeny-order-b53">
+  <link rel="stylesheet" href="styles.css?v=human-projected-insertions-b55">
 </head>
 <body>
   <header class="app-header">
@@ -59,7 +59,7 @@
 
       <section class="alignment-block">
         <div class="selected-window-heading"><div><span class="eyebrow">原始序列与位点约束</span><h3 id="selectionSubtitle">--</h3></div><div class="selection-tools"><div class="selected-metrics"><span>保守性 <strong id="selectedScore">--</strong></span><span>低熵 <strong id="selectedLowEntropy">--</strong></span><span>覆盖度 <strong id="selectedCoverage">--</strong></span><span>物种数 <strong id="selectedSpecies">--</strong></span></div><div class="alignment-mode-switch" aria-label="序列显示范围"><button type="button" class="active" data-alignment-mode="focus" aria-pressed="true">候选局部</button><button type="button" data-alignment-mode="full" aria-pressed="false">全长概览</button></div></div></div>
-        <div class="alignment-key"><span class="human-key"></span><span>人源参考（不计分）</span><i></i><span>选中窗口</span><i class="mismatch-key"></i><span>替换</span><b>–</b><span>明确缺失</span></div>
+        <div class="alignment-key"><span class="human-key"></span><span>人源参考（不计分）</span><i></i><span>选中窗口</span><i class="mismatch-key"></i><span>替换</span><b>–</b><span>明确缺失</span><i class="insertion-key"></i><span>相对人源插入候选</span></div>
         <div id="taxonLegend" class="taxon-legend" aria-label="物种分类颜色图例"></div>
         <div id="alignmentViewer" class="alignment-viewer embedded-alignment"></div>
       </section>
@@ -280,6 +280,13 @@
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <script src="app.js?v=hide-inventory-es-status-b54"></script>
+  <dialog id="insertionDialog" aria-labelledby="insertionDialogTitle">
+    <section class="insertion-dialog-panel">
+      <div class="dialog-heading"><div><span class="eyebrow">人源坐标折叠详情</span><h2 id="insertionDialogTitle">相对人源插入候选</h2></div><button id="closeInsertionDialog" class="close-button" type="button" aria-label="关闭插入详情" title="关闭">×</button></div>
+      <div id="insertionDialogBody"></div>
+    </section>
+  </dialog>
+
+  <script src="app.js?v=human-projected-insertions-b55"></script>
 </body>
 </html>

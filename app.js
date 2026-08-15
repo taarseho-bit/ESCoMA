@@ -109,6 +109,7 @@
     activeTab: "landscape",
     alignmentMode: "focus",
     alignmentRenderKey: null,
+    activeInsertionButton: null,
     statisticsDirty: true
   };
 
@@ -906,9 +907,80 @@
     return window.alignmentColumns.map(column => human.sequence[column]).join("");
   }
 
+  function humanInsertionBlocks(humanSequence) {
+    const blocks = [];
+    let column = 0;
+    let humanPosition = 0;
+    while (column < humanSequence.length) {
+      if (humanSequence[column] !== "-") {
+        humanPosition += 1;
+        column += 1;
+        continue;
+      }
+      const startColumn = column;
+      while (column < humanSequence.length && humanSequence[column] === "-") column += 1;
+      blocks.push({ startColumn, endColumn: column - 1, anchorHumanPosition: humanPosition });
+    }
+    return blocks;
+  }
+
+  function insertionAnchorLabel(anchor, humanLength) {
+    if (anchor <= 0) return "人源 ES 第1位之前";
+    if (anchor >= humanLength) return `人源 ES 第${humanLength}位之后`;
+    return `人源 ES 第${anchor}位与第${anchor + 1}位之间`;
+  }
+
+  function formatInsertionSequence(sequence) {
+    const groups = String(sequence || "").match(/.{1,10}/g) || [];
+    const lines = [];
+    for (let index = 0; index < groups.length; index += 8) lines.push(groups.slice(index, index + 8).join(" "));
+    return lines.join("\n");
+  }
+
+  function openInsertionDialog(insertion, humanLength) {
+    const dialog = document.getElementById("insertionDialog");
+    const body = document.getElementById("insertionDialogBody");
+    const title = document.getElementById("insertionDialogTitle");
+    if (!dialog || !body || !title) return;
+    title.textContent = `${insertion.species.name} · 相对人源插入候选`;
+    const anchor = insertionAnchorLabel(insertion.anchorHumanPosition, humanLength);
+    const containsUnknown = /[^ACGUT]/i.test(insertion.insertedBases);
+    const sourceUrl = insertion.species.source_url || (insertion.species.accession
+      ? `https://www.ncbi.nlm.nih.gov/nuccore/${insertion.species.accession}`
+      : "");
+    const source = sourceUrl
+      ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(insertion.species.accession || "打开原始记录")}</a>`
+      : escapeHtml(insertion.species.accession || "未提供 accession");
+    body.innerHTML = `
+      <div class="insertion-dialog-metrics">
+        <span>人源锚点<strong>${escapeHtml(anchor)}</strong></span>
+        <span>额外碱基<strong>+${insertion.insertedBases.length.toLocaleString()} nt</strong></span>
+        <span>MSA列<strong>${(insertion.startColumn + 1).toLocaleString()}–${(insertion.endColumn + 1).toLocaleString()}</strong></span>
+        <span>来源<strong>${source}</strong></span>
+      </div>
+      <div class="insertion-sequence-block"><span>去除 gap 后的序列${containsUnknown ? " · 含未知碱基" : ""}</span><pre>${escapeHtml(formatInsertionSequence(insertion.insertedBases))}</pre></div>
+      <details class="insertion-aligned-fragment"><summary>查看 MSA 原始片段</summary><pre>${escapeHtml(formatInsertionSequence(insertion.alignedFragment))}</pre></details>
+      <p class="insertion-caveat">该标记表示人源在这些 MSA 列为 gap，而该物种含有碱基；它可能来自真实插入、人源缺失或局部比对不确定性，不直接等同于已确认的进化新增。</p>`;
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function resetActiveInsertionMarker() {
+    if (!state.activeInsertionButton) return;
+    state.activeInsertionButton.classList.remove("active");
+    state.activeInsertionButton.setAttribute("aria-expanded", "false");
+    state.activeInsertionButton = null;
+  }
+
+  function closeInsertionDialog() {
+    const dialog = document.getElementById("insertionDialog");
+    if (dialog?.open) dialog.close();
+    else resetActiveInsertionMarker();
+  }
+
   function renderSelection(sequences) {
     const selected = state.selected;
     if (!selected) {
+      closeInsertionDialog();
       document.getElementById("selectionSubtitle").textContent = "当前长度无完整缓存候选";
       ["selectedScore", "selectedLowEntropy", "selectedCoverage", "selectedSpecies"].forEach(id => {
         document.getElementById(id).textContent = "--";
@@ -938,6 +1010,13 @@
     const viewer = document.getElementById("alignmentViewer");
     const human = findHumanSequence(sequences);
     const alignmentLength = human.sequence.length;
+    const humanMap = humanCoordinateMap(human);
+    const humanLength = humanMap.length;
+    const humanStart = window.humanStart ?? window.human_es_start ?? 1;
+    const humanEnd = window.humanEnd ?? window.human_es_end ?? Math.min(humanLength, humanStart + window.size - 1);
+    const insertionBlocks = humanInsertionBlocks(human.sequence);
+    const insertionEvents = new Map();
+    closeInsertionDialog();
     const focusPadding = 60;
     const sliceStart = state.alignmentMode === "focus" ? Math.max(0, window.start - focusPadding) : 0;
     const sliceEnd = state.alignmentMode === "focus" ? Math.min(alignmentLength, window.end + focusPadding + 1) : alignmentLength;
@@ -947,36 +1026,55 @@
       const classes = ["base"];
       if (isHuman) classes.push("human-base");
       else if (base === "-") classes.push("gap");
+      else if (displayHuman[localIndex] === "-") classes.push("insertion-base");
       else if (base !== displayHuman[localIndex]) classes.push("mismatch");
       if (globalIndex >= window.start && globalIndex <= window.end) classes.push("selected-base");
       return `<span class="${classes.join(" ")}">${base}</span>`;
     }).join("");
-    const makeOverviewBases = (sequence, extraClass = "") => {
-      const before = sequence.slice(0, window.start);
-      const selected = sequence.slice(window.start, window.end + 1);
-      const after = sequence.slice(window.end + 1);
-      return `<span class="overview-sequence ${extraClass}"><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span></span>`;
+    const makeOverviewBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
+      const projected = humanMap.alignmentColumns.map(column => sequence[column]).join("");
+      const before = projected.slice(0, humanStart - 1);
+      const selected = projected.slice(humanStart - 1, humanEnd);
+      const after = projected.slice(humanEnd);
+      const markers = isHuman ? "" : insertionBlocks.map((block, blockIndex) => {
+        const alignedFragment = sequence.slice(block.startColumn, block.endColumn + 1);
+        const insertedBases = alignedFragment.replaceAll("-", "");
+        if (!/[ACGUT]/i.test(insertedBases)) return "";
+        const insertionId = `ins-${speciesIndex}-${blockIndex}`;
+        const insertion = { ...block, alignedFragment, insertedBases, species };
+        insertionEvents.set(insertionId, insertion);
+        const anchor = insertionAnchorLabel(block.anchorHumanPosition, humanLength);
+        const selectedClass = block.anchorHumanPosition >= humanStart && block.anchorHumanPosition < humanEnd
+          ? " selected-insertion"
+          : "";
+        const label = `${species.name}：${anchor}，相对人源额外 ${insertedBases.length} nt`;
+        return `<button type="button" class="overview-insertion-marker${selectedClass}" style="left:${block.anchorHumanPosition}ch" data-insertion-id="${insertionId}" aria-label="${escapeHtml(label)}" aria-controls="insertionDialog" aria-expanded="false" title="${escapeHtml(label)}"></button>`;
+      }).join("");
+      return `<span class="overview-sequence${isHuman ? " human-base" : ""}"><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers}</span>`;
     };
     const makeBases = state.alignmentMode === "focus"
       ? makeDetailedBases
-      : (sequence, isHuman = false) => makeOverviewBases(
-        sequence,
-        isHuman ? "human-base" : ""
-      );
+      : makeOverviewBases;
     viewer.classList.toggle("alignment-overview", state.alignmentMode === "full");
     const rows = [
       state.alignmentMode === "focus"
         ? renderCoordinateRuler(human.sequence, alignmentLength, sliceStart, sliceEnd)
-        : `<div class="alignment-row overview-ruler-row"><span class="alignment-label">MSA全长</span><span class="overview-range">1–${alignmentLength}列 · 选中 ${window.start + 1}–${window.end + 1}</span></div>`,
+        : `<div class="alignment-row overview-ruler-row"><span class="alignment-label">人源ES全长</span><span class="overview-range">1–${humanLength} nt · 选中 ${humanStart}–${humanEnd} · 人源 gap 列已折叠</span></div>`,
       `<div class="alignment-row human-row"><a class="alignment-label source-anchor" href="${human.source_url || `https://www.ncbi.nlm.nih.gov/nuccore/${human.accession || "NR_003287.4"}`}" target="_blank" rel="noopener" title="打开 ${human.accession || "NR_003287.4"} 原始记录">Homo sapiens</a><span class="alignment-bases">${makeBases(human.sequence, true)}</span></div>`
     ];
     const conservation = cachedConstraintProfile(window.size, "score", alignmentLength);
     const lowEntropyColumns = cachedConstraintProfile(window.size, "lowEntropy", alignmentLength);
     rows.push('<div class="alignment-divider"><span>完整缓存代表峰的窗口约束轨道</span></div>');
-    rows.push(renderConstraintTrack("保守性", conservation, window, "conservation", sliceStart, sliceEnd));
-    rows.push(renderConstraintTrack("结构低熵", lowEntropyColumns, window, "entropy", sliceStart, sliceEnd));
-    rows.push('<div class="alignment-divider species-divider"><span>其他物种原始比对序列</span><small>相对人源：近缘在上 · 远缘在下 · 同层先按系统发育组、组内按拉丁学名 · 未映射置后</small></div>');
-    sequences.filter(species => species !== human).sort(compareByHumanPhylogeneticDistance).forEach(species => {
+    if (state.alignmentMode === "full") {
+      rows.push(renderHumanProjectedConstraintTrack("保守性", conservation, window, "conservation", humanMap.alignmentColumns));
+      rows.push(renderHumanProjectedConstraintTrack("结构低熵", lowEntropyColumns, window, "entropy", humanMap.alignmentColumns));
+      rows.push('<div class="alignment-divider species-divider"><span>其他物种的人源坐标投影</span><small>相对人源的额外 MSA 片段已折叠为蓝色插入候选标记</small></div>');
+    } else {
+      rows.push(renderConstraintTrack("保守性", conservation, window, "conservation", sliceStart, sliceEnd));
+      rows.push(renderConstraintTrack("结构低熵", lowEntropyColumns, window, "entropy", sliceStart, sliceEnd));
+      rows.push('<div class="alignment-divider species-divider"><span>其他物种原始比对序列</span><small>相对人源：近缘在上 · 远缘在下 · 同层先按系统发育组、组内按拉丁学名 · 未映射置后</small></div>');
+    }
+    sequences.filter(species => species !== human).sort(compareByHumanPhylogeneticDistance).forEach((species, speciesIndex) => {
       const sourceUrl = species.source_url || (species.accession ? `https://www.ncbi.nlm.nih.gov/nuccore/${species.accession}` : "");
       const taxon = taxonomyFor(species);
       const phylogeneticPositionData = phylogeneticPosition(species);
@@ -984,12 +1082,30 @@
       const label = sourceUrl
         ? `<a class="alignment-label source-anchor taxon-label" style="--taxon-color:${taxon.color}" href="${sourceUrl}" target="_blank" rel="noopener" title="打开 ${species.accession || species.name} 原始记录">${labelInner}</a>`
         : `<span class="alignment-label taxon-label" style="--taxon-color:${taxon.color}" title="${species.name}">${labelInner}</span>`;
-      rows.push(`<div class="alignment-row taxon-row" data-phylogenetic-tier="${phylogeneticPositionData.distanceTier}" style="--taxon-color:${taxon.color}">${label}<span class="alignment-bases">${makeBases(species.sequence)}</span></div>`);
+      rows.push(`<div class="alignment-row taxon-row" data-phylogenetic-tier="${phylogeneticPositionData.distanceTier}" style="--taxon-color:${taxon.color}">${label}<span class="alignment-bases">${makeBases(species.sequence, false, species, speciesIndex)}</span></div>`);
     });
     viewer.innerHTML = rows.join("");
+    viewer.onclick = event => {
+      const button = event.target.closest?.("[data-insertion-id]");
+      if (!button || !viewer.contains(button)) return;
+      const insertion = insertionEvents.get(button.dataset.insertionId);
+      if (!insertion) return;
+      if (state.activeInsertionButton && state.activeInsertionButton !== button) {
+        state.activeInsertionButton.classList.remove("active");
+        state.activeInsertionButton.setAttribute("aria-expanded", "false");
+      }
+      button.classList.add("active");
+      button.setAttribute("aria-expanded", "true");
+      state.activeInsertionButton = button;
+      openInsertionDialog(insertion, humanLength);
+    };
+    const overviewSequence = viewer.querySelector(".overview-sequence");
+    const overviewCellWidth = overviewSequence && humanLength
+      ? overviewSequence.getBoundingClientRect().width / humanLength
+      : 7.25;
     const target = state.alignmentMode === "focus"
       ? Math.max(0, (window.start - sliceStart) * 15 - viewer.clientWidth * 0.35)
-      : Math.max(0, window.start * 7.25 - viewer.clientWidth * 0.35);
+      : Math.max(0, (humanStart - 1) * overviewCellWidth - viewer.clientWidth * 0.35);
     viewer.scrollLeft = target;
   }
 
@@ -1017,6 +1133,27 @@
       }
     }
     return `<div class="alignment-row ruler-row"><span class="alignment-label">人源位置</span><span class="sequence-ruler"><svg width="${width}" height="26" viewBox="0 0 ${width} 26" aria-label="人源ES坐标尺"><line x1="0" x2="${width}" y1="25" y2="25"></line>${ticks.join("")}</svg></span></div>`;
+  }
+
+  function renderHumanProjectedConstraintTrack(label, values, window, type, humanColumns) {
+    const visibleValues = humanColumns.map(column => values[column]);
+    const width = visibleValues.length;
+    const height = 48;
+    const top = 5;
+    const plotHeight = 35;
+    const y = value => top + (1 - Math.max(0, Math.min(100, value)) / 100) * plotHeight;
+    let drawing = false;
+    const path = visibleValues.map((value, index) => {
+      if (!Number.isFinite(value)) { drawing = false; return ""; }
+      const command = drawing ? "L" : "M";
+      drawing = true;
+      return `${command}${(index + 0.5).toFixed(1)},${y(value).toFixed(1)}`;
+    }).filter(Boolean).join(" ");
+    const humanStart = window.humanStart ?? window.human_es_start ?? 1;
+    const humanEnd = window.humanEnd ?? window.human_es_end ?? humanStart + window.size - 1;
+    const selectedX = Math.max(0, humanStart - 1);
+    const selectedWidth = Math.max(1, humanEnd - humanStart + 1);
+    return `<div class="alignment-row constraint-row ${type}-constraint"><span class="alignment-label constraint-label"><strong>${label}</strong><small>0–100 · 人源坐标投影</small></span><span class="constraint-plot projected-constraint"><svg width="${width}ch" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="${label}人源坐标投影曲线"><rect class="constraint-selection" x="${selectedX}" y="0" width="${selectedWidth}" height="${height}"></rect><line class="constraint-grid" x1="0" x2="${width}" y1="${y(50)}" y2="${y(50)}"></line><path class="constraint-path" d="${path}"></path></svg></span></div>`;
   }
 
   function renderConstraintTrack(label, values, window, type, sliceStart = 0, sliceEnd = values.length) {
@@ -1364,6 +1501,12 @@
   }
 
   function bindEvents() {
+    const insertionDialog = document.getElementById("insertionDialog");
+    document.getElementById("closeInsertionDialog").addEventListener("click", closeInsertionDialog);
+    insertionDialog.addEventListener("close", resetActiveInsertionMarker);
+    insertionDialog.addEventListener("click", event => {
+      if (event.target === insertionDialog) closeInsertionDialog();
+    });
     document.getElementById("esSelect").addEventListener("change", event => { state.currentEs = event.target.value; analyzeWithWindowCache(); });
     document.getElementById("rankMode").addEventListener("change", event => { state.rankMode = event.target.value; analyze(); });
     document.getElementById("rankMetric").addEventListener("change", event => { state.rankMetric = event.target.value; analyze(); });
