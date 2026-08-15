@@ -1,4 +1,4 @@
-name: Deploy RiboVine to GitHub Pages
+name: Deploy ESCoMA to GitHub Pages
 
 on:
   push:

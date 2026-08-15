@@ -431,7 +431,7 @@ tbody tr.selected { background: #dcefeb; box-shadow: inset 3px 0 var(--teal); }
 .alignment-row.human-row { background: #edf3f5; border-top: 1px solid var(--line); }
 .human-row .alignment-label { color: var(--navy); font-weight: 700; background: #edf3f5; box-shadow: inset 3px 0 var(--navy); }
 .human-row .human-base { color: var(--navy); font-weight: 700; }
-.taxon-row .taxon-label { align-items: flex-start; justify-content: center; flex-direction: column; padding-left: 14px; background: color-mix(in srgb, var(--taxon-color) 11%, white); box-shadow: inset 6px 0 var(--taxon-color); }
+.taxon-row .taxon-label { z-index: 6; align-items: flex-start; justify-content: center; flex-direction: column; padding-left: 14px; background: color-mix(in srgb, var(--taxon-color) 11%, white); box-shadow: inset 6px 0 var(--taxon-color); }
 .taxon-label .species-name { display: block; max-width: 162px; overflow: hidden; color: var(--ink); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .taxon-label small { display: block; margin-top: 2px; padding: 1px 4px; color: color-mix(in srgb, var(--taxon-color) 84%, black); background: color-mix(in srgb, var(--taxon-color) 13%, white); border-left: 2px solid var(--taxon-color); font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif; font-size: 8px; font-weight: 800; }
 .ruler-row { min-height: 28px; }

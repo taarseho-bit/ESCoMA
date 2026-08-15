@@ -1,9 +1,12 @@
-# RiboVine EvoES
+# ESCoMA
 
-RiboVine is a static research interface for inspecting traceable mammalian LSU
+ESCoMA (Expansion Segment Conserved Module Atlas; 扩增区段保守模块图谱) is a
+static research interface for inspecting traceable mammalian LSU
 alignments and complete, offline-computed EvoES candidate scores. GitHub Pages
 only downloads frozen JSON; MAFFT, RNAstructure CUDA, and random-null calculations never
 run in the browser.
+
+Public site: https://taarseho-bit.github.io/ESCoMA/
 
 ## Frozen scoring panel
 
