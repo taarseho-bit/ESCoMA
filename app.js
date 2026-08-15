@@ -1127,12 +1127,11 @@
         <td><a href="${escapeHtml(record.source_url)}" target="_blank" rel="noopener">${escapeHtml(record.accession)}</a><small>${escapeHtml(record.source_database)}</small></td>
         <td class="numeric">${record.sequence_length.toLocaleString()}</td>
         <td><span class="inventory-status ${statusClass}">${escapeHtml(record.display_status)}</span></td>
-        <td>${escapeHtml(record.es_homology_status === "not_localized_raw_lsu_only" ? "ES局部待定位" : record.es_homology_status)}<small>${escapeHtml(record.msa_status === "not_built" ? "ES级MSA待构建" : record.msa_status)}</small></td>
         <td>${escapeHtml(record.retrieval_date)}<small>MD5 ${escapeHtml(record.sequence_md5)}</small></td>
         <td><button type="button" class="inventory-sequence-button" data-inventory-accession="${escapeHtml(record.accession)}">查看序列</button></td>
       </tr>`;
     }).join("");
-    tableTarget.innerHTML = `<table class="inventory-table"><thead><tr><th>物种</th><th>类群</th><th>来源记录</th><th class="numeric">长度 / nt</th><th>评分身份</th><th>ES处理状态</th><th>获取与校验</th><th>原始序列</th></tr></thead><tbody>${rows || '<tr><td colspan="8">当前筛选没有可用序列。</td></tr>'}</tbody></table>`;
+    tableTarget.innerHTML = `<table class="inventory-table"><thead><tr><th>物种</th><th>类群</th><th>来源记录</th><th class="numeric">长度 / nt</th><th>评分身份</th><th>获取与校验</th><th>原始序列</th></tr></thead><tbody>${rows || '<tr><td colspan="7">当前筛选没有可用序列。</td></tr>'}</tbody></table>`;
     document.querySelectorAll("[data-inventory-accession]").forEach(button => button.addEventListener("click", () => {
       state.selectedInventoryAccession = button.dataset.inventoryAccession;
       renderInventorySequence(payload.records.find(record => record.accession === state.selectedInventoryAccession));

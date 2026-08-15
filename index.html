@@ -96,7 +96,7 @@
             <label class="inventory-search"><span>检索</span><input id="inventorySearch" type="search" placeholder="物种、类群或 accession"></label>
           </div>
         </div>
-        <div class="inventory-note"><strong>数据语义</strong><span>这里只列出已通过原始核 LSU 质量控制且真实存在的序列。哺乳动物可作为评分源；非哺乳动物完整保留并可查看原序列，但在逐 ES 同源定位和 MSA 完成前不参与任何得分。</span></div>
+        <div class="inventory-note"><strong>数据语义</strong><span>这里只列出已通过原始核 LSU 质量控制且真实存在的序列。哺乳动物可作为评分源；非哺乳动物完整保留并可查看原序列，但不参与当前评分。</span></div>
         <div id="inventoryTable" class="table-scroll"></div>
         <div id="inventorySequence" class="inventory-sequence-viewer" aria-live="polite"></div>
       </section>
@@ -280,6 +280,6 @@
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <script src="app.js?v=human-phylogeny-order-b53"></script>
+  <script src="app.js?v=hide-inventory-es-status-b54"></script>
 </body>
 </html>
