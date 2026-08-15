@@ -946,6 +946,12 @@
     return `人28S 第${humanAbsolutePosition(anchor)}位与第${humanAbsolutePosition(anchor + 1)}位之间`;
   }
 
+  function insertionAnchorCompactText(anchor, humanLength) {
+    if (anchor <= 0) return `人28S < ${humanAbsolutePosition(1)}`;
+    if (anchor >= humanLength) return `人28S > ${humanAbsolutePosition(humanLength)}`;
+    return `人28S ${humanAbsolutePosition(anchor)}|${humanAbsolutePosition(anchor + 1)}`;
+  }
+
   function formatInsertionSequence(sequence) {
     const groups = String(sequence || "").match(/.{1,10}/g) || [];
     const lines = [];
@@ -953,31 +959,39 @@
     return lines.join("\n");
   }
 
-  function openInsertionDialog(insertion, humanLength) {
+  function openInsertionDialog(insertion, humanLength, anchorButton) {
     const dialog = document.getElementById("insertionDialog");
     const body = document.getElementById("insertionDialogBody");
     const title = document.getElementById("insertionDialogTitle");
     if (!dialog || !body || !title) return;
-    title.textContent = `${insertion.species.name} · 相对人源额外片段`;
-    const anchor = insertionAnchorLabel(insertion.anchorHumanPosition, humanLength);
-    const containsUnknown = /[^ACGUT]/i.test(insertion.insertedBases);
+    const events = insertion.events || [insertion];
+    const totalLength = events.reduce((sum, event) => sum + event.insertedBases.length, 0);
+    title.textContent = insertion.species.name;
     const sourceUrl = insertion.species.source_url || (insertion.species.accession
       ? `https://www.ncbi.nlm.nih.gov/nuccore/${insertion.species.accession}`
       : "");
     const source = sourceUrl
       ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(insertion.species.accession || "打开原始记录")}</a>`
       : escapeHtml(insertion.species.accession || "未提供 accession");
+    const fragments = events.map(event => `
+      <section class="insertion-popover-fragment">
+        <div><span>${escapeHtml(insertionAnchorCompactText(event.anchorHumanPosition, humanLength))}</span><strong>+${event.insertedBases.length.toLocaleString()} nt</strong></div>
+        <pre>${escapeHtml(formatInsertionSequence(event.insertedBases))}</pre>
+      </section>`).join("");
+    const clusterSummary = events.length > 1 ? `<strong>${events.length}处 · +${totalLength.toLocaleString()} nt</strong>` : "";
     body.innerHTML = `
-      <div class="insertion-dialog-metrics">
-        <span>人源锚点<strong>${escapeHtml(anchor)}</strong></span>
-        <span>额外碱基<strong>+${insertion.insertedBases.length.toLocaleString()} nt</strong></span>
-        <span>MSA列<strong>${(insertion.startColumn + 1).toLocaleString()}–${(insertion.endColumn + 1).toLocaleString()}</strong></span>
-        <span>来源<strong>${source}</strong></span>
-      </div>
-      <div class="insertion-sequence-block"><span>展开序列（已去除 gap，N 按 - 处理）${containsUnknown ? " · 含其他未知碱基" : ""}</span><pre>${escapeHtml(formatInsertionSequence(insertion.insertedBases))}</pre></div>
-      <details class="insertion-aligned-fragment"><summary>查看对应 MSA 片段（N 已显示为 -）</summary><pre>${escapeHtml(formatInsertionSequence(insertion.alignedFragment))}</pre></details>
-      <p class="insertion-caveat">该数字表示这些人源 gap 列中可见的额外碱基数。它可能来自真实插入、人源缺失或局部比对不确定性，不直接等同于已确认的进化新增。</p>`;
-    if (!dialog.open) dialog.showModal();
+      <div class="insertion-popover-summary">${clusterSummary}<span>${source}</span></div>
+      <div class="insertion-popover-fragments">${fragments}</div>`;
+    if (!dialog.matches(":popover-open")) dialog.showPopover();
+    const anchorRect = anchorButton?.getBoundingClientRect();
+    if (!anchorRect) return;
+    const panelRect = dialog.getBoundingClientRect();
+    const gap = 7;
+    const left = Math.max(10, Math.min(window.innerWidth - panelRect.width - 10, anchorRect.left + anchorRect.width / 2 - panelRect.width / 2));
+    let top = anchorRect.bottom + gap;
+    if (top + panelRect.height > window.innerHeight - 10) top = Math.max(10, anchorRect.top - panelRect.height - gap);
+    dialog.style.left = `${left}px`;
+    dialog.style.top = `${top}px`;
   }
 
   function resetActiveInsertionMarker() {
@@ -989,7 +1003,7 @@
 
   function closeInsertionDialog() {
     const dialog = document.getElementById("insertionDialog");
-    if (dialog?.open) dialog.close();
+    if (dialog?.matches(":popover-open")) dialog.hidePopover();
     else resetActiveInsertionMarker();
   }
 
@@ -1037,34 +1051,56 @@
     closeInsertionDialog();
 
     const makeInsertionMarkers = (sequence, species, speciesIndex) => {
-      const laneEnds = [];
       const cellWidth = detailed ? 15 : 6.65;
-      const markers = insertionBlocks.map((block, blockIndex) => {
+      const events = insertionBlocks.map(block => {
         const alignedFragment = sequence.slice(block.startColumn, block.endColumn + 1)
           .split("").map(displayBase).join("");
         const insertedBases = alignedFragment.replaceAll("-", "");
-        if (!insertedBases.length) return "";
-        const insertionId = `ins-${speciesIndex}-${blockIndex}`;
-        const insertion = { ...block, alignedFragment, insertedBases, species };
-        insertionEvents.set(insertionId, insertion);
-        const anchor = insertionAnchorLabel(block.anchorHumanPosition, humanLength);
-        const selectedClass = block.anchorHumanPosition >= humanStart && block.anchorHumanPosition < humanEnd
+        return insertedBases.length ? { ...block, alignedFragment, insertedBases } : null;
+      }).filter(Boolean);
+      const clusters = [];
+      const measureCluster = cluster => {
+        cluster.totalLength = cluster.events.reduce((sum, event) => sum + event.insertedBases.length, 0);
+        cluster.markerText = `+${cluster.totalLength}`;
+        cluster.centerAnchor = (cluster.events[0].anchorHumanPosition + cluster.events[cluster.events.length - 1].anchorHumanPosition) / 2;
+        cluster.markerWidth = Math.max(18, cluster.markerText.length * 4.4 + 8);
+        cluster.start = cluster.centerAnchor * cellWidth - cluster.markerWidth / 2;
+        cluster.end = cluster.centerAnchor * cellWidth + cluster.markerWidth / 2;
+      };
+      events.forEach(event => {
+        const cluster = { events: [event] };
+        measureCluster(cluster);
+        const previous = clusters[clusters.length - 1];
+        if (previous && cluster.start <= previous.end + 2) {
+          previous.events.push(event);
+          measureCluster(previous);
+          while (clusters.length > 1) {
+            const current = clusters[clusters.length - 1];
+            const earlier = clusters[clusters.length - 2];
+            if (current.start > earlier.end + 2) break;
+            earlier.events.push(...current.events);
+            measureCluster(earlier);
+            clusters.pop();
+          }
+        } else {
+          clusters.push(cluster);
+        }
+      });
+      return clusters.map((cluster, clusterIndex) => {
+        const insertionId = `ins-${speciesIndex}-${clusterIndex}`;
+        insertionEvents.set(insertionId, { species, events: cluster.events });
+        const selectedClass = cluster.events.some(event => event.anchorHumanPosition >= humanStart && event.anchorHumanPosition < humanEnd)
           ? " selected-insertion"
           : "";
-        const markerText = `+${insertedBases.length}`;
-        const markerWidth = Math.max(26, markerText.length * 5.2 + 10);
-        const markerCenter = block.anchorHumanPosition * cellWidth;
-        const markerStart = markerCenter - markerWidth / 2;
-        let lane = laneEnds.findIndex(end => markerStart >= end + 3);
-        if (lane < 0) lane = laneEnds.length;
-        laneEnds[lane] = markerCenter + markerWidth / 2;
-        const label = `${species.name}：${anchor}，折叠 ${insertedBases.length} nt，点击展开`;
+        const firstAnchor = insertionAnchorLabel(cluster.events[0].anchorHumanPosition, humanLength);
+        const label = cluster.events.length === 1
+          ? `${species.name}：${firstAnchor}，折叠 ${cluster.totalLength} nt，点击查看`
+          : `${species.name}：${cluster.events.length}个相邻折叠片段，共 ${cluster.markerText} nt，点击查看`;
         const left = detailed
-          ? `${block.anchorHumanPosition * 15}px`
-          : `${block.anchorHumanPosition / Math.max(1, humanLength) * 100}%`;
-        return `<button type="button" class="insertion-count-marker${detailed ? " detailed-insertion" : " overview-insertion"}${selectedClass}" style="left:${left};--marker-lane:${lane}" data-insertion-id="${insertionId}" aria-label="${escapeHtml(label)}" aria-controls="insertionDialog" aria-expanded="false" title="${escapeHtml(label)}">${markerText}</button>`;
+          ? `${cluster.centerAnchor * 15}px`
+          : `${cluster.centerAnchor / Math.max(1, humanLength) * 100}%`;
+        return `<button type="button" class="insertion-count-marker${detailed ? " detailed-insertion" : " overview-insertion"}${selectedClass}" style="left:${left}" data-insertion-id="${insertionId}" aria-label="${escapeHtml(label)}" aria-controls="insertionDialog" aria-expanded="false" title="${escapeHtml(label)}">${cluster.markerText}</button>`;
       }).join("");
-      return { html: markers, laneCount: laneEnds.length };
     };
 
     const makeDetailedBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
@@ -1077,10 +1113,8 @@
       if (localIndex >= humanStart - 1 && localIndex < humanEnd) classes.push("selected-base");
       return `<span class="${classes.join(" ")}">${escapeHtml(base)}</span>`;
       }).join("");
-      const markers = isHuman ? { html: "", laneCount: 0 } : makeInsertionMarkers(sequence, species, speciesIndex);
-      const markerClass = markers.laneCount ? " has-insertions" : "";
-      const markerStyle = markers.laneCount ? ` style="--marker-lanes:${markers.laneCount}"` : "";
-      return `<span class="detail-sequence${isHuman ? " human-base" : ""}${markerClass}"${markerStyle}>${bases}${markers.html}</span>`;
+      const markers = isHuman ? "" : makeInsertionMarkers(sequence, species, speciesIndex);
+      return `<span class="detail-sequence${isHuman ? " human-base" : ""}">${bases}${markers}</span>`;
     };
 
     const makeOverviewBases = (sequence, isHuman = false, species = null, speciesIndex = 0) => {
@@ -1088,10 +1122,8 @@
       const before = escapeHtml(projected.slice(0, humanStart - 1));
       const selected = escapeHtml(projected.slice(humanStart - 1, humanEnd));
       const after = escapeHtml(projected.slice(humanEnd));
-      const markers = isHuman ? { html: "", laneCount: 0 } : makeInsertionMarkers(sequence, species, speciesIndex);
-      const markerClass = markers.laneCount ? " has-insertions" : "";
-      const markerStyle = markers.laneCount ? ` style="--marker-lanes:${markers.laneCount}"` : "";
-      return `<span class="overview-sequence${isHuman ? " human-base" : ""}${markerClass}"${markerStyle}><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers.html}</span>`;
+      const markers = isHuman ? "" : makeInsertionMarkers(sequence, species, speciesIndex);
+      return `<span class="overview-sequence${isHuman ? " human-base" : ""}"><span>${before}</span><span class="overview-selected">${selected}</span><span>${after}</span>${markers}</span>`;
     };
     const makeBases = detailed ? makeDetailedBases : makeOverviewBases;
     viewer.classList.toggle("alignment-detail", detailed);
@@ -1106,7 +1138,7 @@
     rows.push(renderProjectedConstraintTrack("轨道一", "目平衡保守性", conservation, window, "conservation", humanMap.alignmentColumns, state.alignmentMode));
     rows.push(renderProjectedConstraintTrack("轨道二", "结构低熵", lowEntropyColumns, window, "entropy", humanMap.alignmentColumns, state.alignmentMode));
     const densityLabel = detailed ? "详细全长" : "紧凑概览";
-    rows.push(`<div class="alignment-divider species-divider"><span>其他物种 · ${densityLabel}</span><small>N 统一显示为 -；相对人源额外片段以 +长度 折叠，点击数字展开</small></div>`);
+    rows.push(`<div class="alignment-divider species-divider"><span>其他物种 · ${densityLabel}</span><small>+长度：点击查看折叠片段</small></div>`);
     sequences.filter(species => species !== human).sort(compareByHumanPhylogeneticDistance).forEach((species, speciesIndex) => {
       const sourceUrl = species.source_url || (species.accession ? `https://www.ncbi.nlm.nih.gov/nuccore/${species.accession}` : "");
       const taxon = taxonomyFor(species);
@@ -1130,7 +1162,10 @@
       button.classList.add("active");
       button.setAttribute("aria-expanded", "true");
       state.activeInsertionButton = button;
-      openInsertionDialog(insertion, humanLength);
+      openInsertionDialog(insertion, humanLength, button);
+    };
+    viewer.onscroll = () => {
+      if (document.getElementById("insertionDialog")?.matches(":popover-open")) closeInsertionDialog();
     };
     const overviewSequence = viewer.querySelector(".overview-sequence");
     const overviewCellWidth = overviewSequence && humanLength
@@ -1528,9 +1563,13 @@
   function bindEvents() {
     const insertionDialog = document.getElementById("insertionDialog");
     document.getElementById("closeInsertionDialog").addEventListener("click", closeInsertionDialog);
-    insertionDialog.addEventListener("close", resetActiveInsertionMarker);
-    insertionDialog.addEventListener("click", event => {
-      if (event.target === insertionDialog) closeInsertionDialog();
+    insertionDialog.addEventListener("toggle", () => {
+      if (!insertionDialog.matches(":popover-open")) resetActiveInsertionMarker();
+    });
+    document.addEventListener("pointerdown", event => {
+      if (!insertionDialog.matches(":popover-open")) return;
+      if (insertionDialog.contains(event.target) || event.target.closest?.("[data-insertion-id]")) return;
+      closeInsertionDialog();
     });
     document.getElementById("esSelect").addEventListener("change", event => { state.currentEs = event.target.value; analyzeWithWindowCache(); });
     document.getElementById("rankMode").addEventListener("change", event => { state.rankMode = event.target.value; analyze(); });

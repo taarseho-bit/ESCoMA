@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f5f7f8">
   <link rel="icon" type="image/svg+xml" href="assets/brand/escoma-mark-app-light.svg?v=brand-v1">
   <title>ESCoMA｜扩增区段保守模块图谱</title>
-  <link rel="stylesheet" href="styles.css?v=human-28s-collapsed-counts-b57">
+  <link rel="stylesheet" href="styles.css?v=human-28s-inline-markers-b58">
 </head>
 <body>
   <header class="app-header">
@@ -279,13 +279,13 @@
     <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
   </main>
 
-  <dialog id="insertionDialog" aria-labelledby="insertionDialogTitle">
+  <div id="insertionDialog" class="insertion-popover" popover="auto" role="dialog" aria-labelledby="insertionDialogTitle">
     <section class="insertion-dialog-panel">
-      <div class="dialog-heading"><div><span class="eyebrow">折叠片段详情</span><h2 id="insertionDialogTitle">相对人源额外片段</h2></div><button id="closeInsertionDialog" class="close-button" type="button" aria-label="关闭插入详情" title="关闭">×</button></div>
+      <div class="dialog-heading"><div><span class="eyebrow">相对人源额外片段</span><h2 id="insertionDialogTitle">折叠片段</h2></div><button id="closeInsertionDialog" class="close-button" type="button" aria-label="关闭插入详情" title="关闭">×</button></div>
       <div id="insertionDialogBody"></div>
     </section>
-  </dialog>
+  </div>
 
-  <script src="app.js?v=human-28s-collapsed-counts-b57"></script>
+  <script src="app.js?v=human-28s-inline-markers-b58"></script>
 </body>
 </html>
