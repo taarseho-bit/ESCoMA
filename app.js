@@ -119,11 +119,6 @@
     unresolved: { label: "坐标或结构范围未决", short: "定位未决", className: "unresolved" }
   };
 
-  const SUBARM_WARNINGS = {
-    ES7L: "ES7L-a/b/c-h 的精确人源子臂边界尚未全部冻结。",
-    ES15L: "ES15L-A 名称已有文献依据，但当前参考坐标尚未冻结。"
-  };
-
   function scopeClassFor(record) {
     if (record.screening_status === "manual_review_coordinate_and_structure_scope") return "unresolved";
     if (record.screening_status === "hold_at_preliminary_structure_gate") return "core_hold";
@@ -328,10 +323,10 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const summary = await response.json();
       state.librarySummary = summary;
-      target.textContent = `${summary.combined_fasta_records}/${summary.panel_species} 通过QC`;
+      if (target) target.textContent = `${summary.combined_fasta_records}/${summary.panel_species} 通过QC`;
       markStatisticsDirty();
     } catch {
-      target.textContent = "QC状态不可用";
+      if (target) target.textContent = "QC状态不可用";
     }
   }
 
@@ -520,19 +515,19 @@
   function alignmentCoordinateText(window) { return `${window.start + 1}–${window.end + 1}`; }
 
   function render(dataset, sequences, ranked, humanLength = humanCoordinateMap(findHumanSequence(sequences)).length) {
-    document.getElementById("datasetLabel").textContent = dataset.label;
-    document.getElementById("speciesCount").textContent = `${Math.max(0, sequences.length - 1)}个非人物种 / ${sequences.length}条序列`;
-    document.getElementById("alignmentLength").textContent = `${humanLength} nt`;
+    const scoringSequences = sequences.filter(item => !/^Homo sapiens$/i.test(item.name));
+    const scoringOrders = new Set(scoringSequences.map(item => item.order).filter(Boolean)).size;
+    document.getElementById("speciesCount").textContent = `${scoringSequences.length} 种非人哺乳动物 · ${scoringOrders} 目`;
     const allWindows = dataset.summary?.all_window_count ?? dataset.windows?.length ?? 0;
     const completeWindows = dataset.summary?.complete_window_count ?? 0;
     const demoWindows = dataset.summary?.demo_window_count ?? 0;
-    document.getElementById("analysisStatus").textContent = `已载入 ${allWindows.toLocaleString()} 个逐 1 nt 窗口 · 正式 B=500 ${completeWindows} 个 · Demo ${demoWindows} 个`;
-    document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA分区函数 + 二核苷酸零模型';
-    document.getElementById("dataNotice").textContent = `离线E-INS-i缓存；人源不计分；${dataset.summary?.scoring_species ?? sequences.length - 1}种非人哺乳动物按目等权`;
+    document.getElementById("analysisStatus").textContent = `${allWindows.toLocaleString()} 个 · 正式 ${completeWindows} · 预览 ${demoWindows}`;
+    document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>低熵：二核苷酸零模型';
+    document.getElementById("dataNotice").textContent = `${dataset.summary?.scoring_species ?? sequences.length - 1}种非人哺乳动物参与评分`;
     const metric = state.rankMetric === "auto" ? (state.results.some(item => Number.isFinite(item.jointScore)) ? "联合分数" : "保守性") : ({ conservation: "保守性", low_entropy: "结构低熵", joint: "联合分数" }[state.rankMetric]);
     document.getElementById("rankingMethodNote").textContent = state.rankMode === "all"
-      ? `显示全部已完成保守性与质控的逐 1 nt 窗口，当前按${metric}排序；Demo B=20 用于快速展示，正式结果仍标记 B=500`
-      : `将重叠至少 10 nt 的窗口合并为代表峰，当前按${metric}选峰；Demo 与正式分数在计算状态列中分别标记`;
+      ? `全部合格窗口 · 按${metric}排序`
+      : `去冗余窗口 · 按${metric}排序 · 重叠 ≥ 10 nt 者剔除`;
     renderSummary(state.selected, dataset.summary?.scoring_species ?? sequences.length - 1);
     renderLegend();
     renderTaxonLegend(sequences);
@@ -557,21 +552,19 @@
 
   function renderHumanReference(dataset, sequences, humanLength) {
     const meta = dataset.metadata;
-    document.getElementById("datasetLabel").textContent = `${dataset.label} · Human ES Reference v1.2`;
-    document.getElementById("speciesCount").textContent = "1（人源）";
-    document.getElementById("alignmentLength").textContent = `${humanLength} nt`;
-    document.getElementById("analysisStatus").textContent = "跨物种MSA待构建";
+    document.getElementById("speciesCount").textContent = "当前不评分";
+    document.getElementById("analysisStatus").textContent = "仅展示人源参考";
     document.getElementById("rankingMethodNote").textContent = `${SCOPE_LABELS[scopeClassFor(meta)].label}：${scopeAction(meta)}`;
-    document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>低熵 = 待同源定位与MSA后计算';
-    document.getElementById("dataNotice").textContent = "人源真实参考；保守性与低熵不从单序列推断";
-    document.getElementById("topCoordinates").textContent = `${humanAbsolutePosition(1)}–${humanAbsolutePosition(humanLength)}`;
-    document.getElementById("topContext").textContent = meta.window_strategy;
+    document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>低熵：二核苷酸零模型';
+    document.getElementById("dataNotice").textContent = "当前 ES 不参与评分";
+    document.getElementById("topCoordinates").textContent = "--";
+    document.getElementById("topContext").textContent = "仅展示人源参考";
     document.getElementById("topScore").textContent = "--";
     document.getElementById("topLowEntropy").textContent = "--";
-    document.getElementById("topEntropyContext").textContent = "跨物种MSA待构建";
+    document.getElementById("topEntropyContext").textContent = "当前不评分";
     document.getElementById("topCoverage").textContent = "--";
-    document.getElementById("topCoverageContext").textContent = "待跨物种MSA";
-    document.getElementById("legend").innerHTML = '<span class="reference-legend">真实人源序列 · 约束轨道待计算</span>';
+    document.getElementById("topCoverageContext").textContent = "当前不评分";
+    document.getElementById("legend").innerHTML = '<span class="reference-legend">仅展示人源参考</span>';
     renderReferenceChart(humanLength);
     renderReferenceAlignment(dataset, sequences[0]);
     renderReferenceRanking();
@@ -586,7 +579,7 @@
     const trackH = width < 560 ? 94 : 88;
     const trackGap = 38;
     const tops = [margin.top, margin.top + trackH + trackGap];
-    const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "等待跨物种多序列比对的双约束轨道" });
+    const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "当前不评分的双约束轨道" });
     [["轨道一", "目平衡保守性", "conservation-track-label", "conservation-track-bg"], ["轨道二", "结构低熵", "entropy-track-label", "entropy-track-bg"]].forEach(([title, subtitle, labelClass, backgroundClass], index) => {
       const top = tops[index];
       svg.appendChild(svgEl("rect", { x: margin.left, y: top, width: plotW, height: trackH, class: `track-bg pending-track ${backgroundClass}` }));
@@ -595,7 +588,7 @@
       const titleEl = svgEl("text", { x: 12, y: top + 34, class: `track-label ${labelClass}` }); titleEl.textContent = title; svg.appendChild(titleEl);
       const subEl = svgEl("text", { x: 12, y: top + 52, class: `track-subtitle ${labelClass}` }); subEl.textContent = subtitle; svg.appendChild(subEl);
       const wait = svgEl("text", { x: margin.left + plotW / 2, y: mid - 9, "text-anchor": "middle", class: "pending-label" });
-      wait.textContent = index === 0 ? "待定位跨物种ES同源区段并构建MSA" : "待从验证后的比对/结构概率计算";
+      wait.textContent = "当前 ES 仅展示人源参考";
       svg.appendChild(wait);
     });
     const xLabel = svgEl("text", { x: margin.left + plotW / 2, y: height - 9, "text-anchor": "middle", class: "axis-label" });
@@ -610,9 +603,9 @@
       renderProjectedCoordinateRuler(length, "focus"),
       `<div class="alignment-row human-row"><span class="alignment-label">Homo sapiens</span><span class="alignment-bases"><span class="detail-sequence human-base">${human.sequence.split("").map(base => `<span class="base human-base">${escapeHtml(displayBase(base))}</span>`).join("")}</span></span></div>`,
       '<div class="alignment-divider"><span>逐位点约束轨道</span></div>',
-      renderPendingConstraintTrack("轨道一 · 目平衡保守性", length, "待跨物种MSA"),
-      renderPendingConstraintTrack("轨道二 · 结构低熵", length, "待跨物种MSA"),
-      `<div class="reference-metadata"><span><strong>宿主螺旋</strong>${meta.host_helix || "--"}</span><span><strong>坐标系统</strong>${meta.coord_system_id}</span><span><strong>参考序列</strong>${meta.ref_accession}</span><span><strong>筛选状态</strong>${meta.screening_status}</span></div>`
+      renderPendingConstraintTrack("轨道一 · 目平衡保守性", length, "当前不评分"),
+      renderPendingConstraintTrack("轨道二 · 结构低熵", length, "当前不评分"),
+      `<div class="reference-metadata"><span><strong>宿主螺旋</strong>${meta.host_helix || "--"}</span><span><strong>坐标系统</strong>${meta.coord_system_id}</span><span><strong>参考序列</strong>${meta.ref_accession}</span><span><strong>分析用途</strong>仅展示人源参考</span></div>`
     ];
     document.getElementById("selectionSubtitle").textContent = `${meta.es_id} · ${meta.molecule} · ${meta.component_coordinates}`;
     document.getElementById("selectedScore").textContent = "--";
@@ -640,8 +633,8 @@
       ["topCoordinates", "topScore", "topLowEntropy", "topCoverage"].forEach(id => {
         document.getElementById(id).textContent = "--";
       });
-      document.getElementById("topContext").textContent = "当前长度无完整缓存候选";
-      document.getElementById("topEntropyContext").textContent = "缺失记录不显示";
+      document.getElementById("topContext").textContent = "当前条件无候选";
+      document.getElementById("topEntropyContext").textContent = "暂无";
       document.getElementById("topCoverageContext").textContent = `${speciesCount}个非人物种`;
       return;
     }
@@ -650,7 +643,9 @@
     document.getElementById("topScore").textContent = scoreFmt(top.score);
     document.getElementById("topLowEntropy").textContent = scoreFmt(top.lowEntropy);
     document.getElementById("topCoverage").textContent = pct(top.coverage);
-    document.getElementById("topEntropyContext").textContent = Number.isFinite(top.lowEntropy) ? `RNAstructure CUDA · 零模型 B=${top.null_B}` : "待结构零模型缓存";
+    document.getElementById("topEntropyContext").textContent = top.scoreStatus === "complete_b500"
+      ? "正式 · B=500"
+      : Number.isFinite(top.lowEntropy) ? `预览 · B=${top.null_B}` : "暂无";
     document.getElementById("topCoverageContext").textContent = `${top.n_orders_callable}/${top.n_orders_planned}目 · ${speciesCount}种`;
   }
 
@@ -799,7 +794,7 @@
       svg.appendChild(svgEl("rect", { x: bandX, y: conservationTop, width: bandWidth, height: entropyTop + trackH - conservationTop, class: "selected-band" }));
       svg.appendChild(svgEl("rect", { x: bandX, y: conservationTop, width: bandWidth, height: entropyTop + trackH - conservationTop, class: "selected-outline" }));
       const peak = svgEl("text", { x: Math.min(width - margin.right - 145, bandX + 5), y: conservationTop - 12, class: "peak-label" });
-      peak.textContent = `最高分  人28S ${humanAbsoluteCoordinateText(state.selected)} · ${state.selected.size} nt`;
+      peak.textContent = `当前窗口  人28S ${humanAbsoluteCoordinateText(state.selected)} · ${state.selected.size} nt`;
       svg.appendChild(peak);
     }
 
@@ -843,7 +838,7 @@
     });
     if (!hasLowEntropy) {
       const pending = svgEl("text", { x: margin.left + plotW / 2, y: entropyTop + trackH / 2, "text-anchor": "middle", class: "pending-label" });
-      pending.textContent = "全窗口保守性已载入；结构低熵正在本地补算";
+      pending.textContent = "部分窗口暂无结构低熵分数";
       svg.appendChild(pending);
     }
 
@@ -858,7 +853,7 @@
       hoverLine.setAttribute("x1", x(coordinate)); hoverLine.setAttribute("x2", x(coordinate)); hoverLine.setAttribute("visibility", "visible");
       const rows = [...seriesBySize.entries()].map(([size, series]) => {
         const datum = nearestWindow(series, coordinate);
-        return `<span style="color:${windowColor(size)}">●</span> ${size} nt：人28S ${humanAbsoluteCoordinateText(datum)} · 轨道一 目平衡保守性 <strong>${scoreFmt(datum.score)}</strong> · 轨道二 结构低熵 ${scoreFmt(datum.lowEntropy)}`;
+        return `<span style="color:${windowColor(size)}">●</span> ${size} nt · 28S ${humanAbsoluteCoordinateText(datum)} · 保守 ${scoreFmt(datum.score)} · 低熵 ${scoreFmt(datum.lowEntropy)}`;
       });
       tooltip.innerHTML = `<strong>人28S位置 ${humanAbsolutePosition(coordinate + 1)}</strong><br>${rows.join("<br>")}`;
       tooltip.hidden = false; tooltip.style.left = `${Math.min(window.innerWidth - 280, event.clientX + 14)}px`; tooltip.style.top = `${Math.max(8, event.clientY - 26)}px`;
@@ -883,7 +878,7 @@
       const isOfficial = row.scoreStatus === "complete_b500";
       const isDemo = row.scoreStatus.startsWith("demo_b");
       const statusClass = isOfficial ? "complete" : isDemo ? "demo" : "pending";
-      const statusLabel = isOfficial ? "B=500 完成" : isDemo ? `Demo B=${row.null_B}` : "低熵待计算";
+      const statusLabel = isOfficial ? "正式 · B=500" : isDemo ? `预览 · B=${row.null_B}` : "暂无";
       tr.innerHTML = `
         <td class="rank-number">${String(index + 1).padStart(2, "0")}</td>
         <td><span class="legend-swatch" style="display:inline-block;margin-right:7px;background:${windowColor(row.size)}"></span>${row.size} nt${WINDOW_COLORS[row.size] ? "" : "（整段）"}</td>
@@ -1006,7 +1001,7 @@
     const selected = state.selected;
     if (!selected) {
       closeInsertionDialog();
-      document.getElementById("selectionSubtitle").textContent = "当前长度无完整缓存候选";
+      document.getElementById("selectionSubtitle").textContent = "当前条件无候选";
       ["selectedScore", "selectedLowEntropy", "selectedCoverage", "selectedSpecies"].forEach(id => {
         document.getElementById(id).textContent = "--";
       });
@@ -1307,23 +1302,24 @@
       return [record.species, record.major_clade, record.accession, record.taxid, record.source_database]
         .some(value => String(value ?? "").toLocaleLowerCase().includes(query));
     });
-    statusTarget.textContent = `${payload.surveyed_species} 个目标物种中 ${payload.available_sequence_records} 条真实核LSU通过QC并全部公开；当前显示 ${visible.length} 条。其余 ${payload.excluded_unavailable_records} 条没有合格序列，不以缺失值占位。`;
+    statusTarget.textContent = `${payload.available_sequence_records} 条已核验记录 · 当前显示 ${visible.length} 条`;
 
     const rows = visible.map(record => {
       const scope = inventoryScope(record);
       const scoring = scope === "mammal";
       const statusClass = scoring ? "scoring" : "display-only";
+      const statusLabel = scoring ? "参与 ES 评分" : "仅展示";
       return `<tr>
         <td><strong>${escapeHtml(record.species)}</strong><small>TaxID ${record.taxid ?? "未提供"}</small></td>
         <td>${escapeHtml(record.major_clade)}</td>
         <td><a href="${escapeHtml(record.source_url)}" target="_blank" rel="noopener">${escapeHtml(record.accession)}</a><small>${escapeHtml(record.source_database)}</small></td>
         <td class="numeric">${record.sequence_length.toLocaleString()}</td>
-        <td><span class="inventory-status ${statusClass}">${escapeHtml(record.display_status)}</span></td>
+        <td><span class="inventory-status ${statusClass}">${statusLabel}</span></td>
         <td>${escapeHtml(record.retrieval_date)}<small>MD5 ${escapeHtml(record.sequence_md5)}</small></td>
         <td><button type="button" class="inventory-sequence-button" data-inventory-accession="${escapeHtml(record.accession)}">查看序列</button></td>
       </tr>`;
     }).join("");
-    tableTarget.innerHTML = `<table class="inventory-table"><thead><tr><th>物种</th><th>类群</th><th>来源记录</th><th class="numeric">长度 / nt</th><th>评分身份</th><th>获取与校验</th><th>原始序列</th></tr></thead><tbody>${rows || '<tr><td colspan="7">当前筛选没有可用序列。</td></tr>'}</tbody></table>`;
+    tableTarget.innerHTML = `<table class="inventory-table"><thead><tr><th>物种</th><th>类群</th><th>来源记录</th><th class="numeric">长度 / nt</th><th>分析用途</th><th>获取与校验</th><th>原始序列</th></tr></thead><tbody>${rows || '<tr><td colspan="7">当前筛选没有可用序列。</td></tr>'}</tbody></table>`;
     document.querySelectorAll("[data-inventory-accession]").forEach(button => button.addEventListener("click", () => {
       state.selectedInventoryAccession = button.dataset.inventoryAccession;
       renderInventorySequence(payload.records.find(record => record.accession === state.selectedInventoryAccession));
@@ -1336,29 +1332,17 @@
   }
 
   function renderDatabaseLayers(summary) {
-    const catalog = state.databaseCatalog;
-    const silvaCount = catalog?.collections?.silva_lsu_ref_nr99?.records ?? 95279;
-    const rfamCount = catalog?.collections?.rfam_rf02543?.records ?? 107553;
-    const rodCount = catalog?.collections?.rod_v1_2?.records ?? 69480;
-    const rodPanel = catalog?.collections?.rod_species_panel_v1;
-    const eukLsu = catalog?.collections?.eukaryome_lsu_v2_0;
-    const eukLong = catalog?.collections?.eukaryome_long_v2_0;
-    const eukPanel = catalog?.collections?.eukaryome_species_panel_v1;
     const lsuPass = state.librarySummary?.combined_fasta_records ?? 79;
-    const panel = state.librarySummary?.panel_species ?? 135;
+    const totalWindows = Number(state.allWindowsManifest?.total_windows ?? 0);
+    const formalWindows = Number(state.allWindowsManifest?.complete_low_entropy_windows ?? 0);
+    const previewWindows = Number(state.allWindowsManifest?.demo_low_entropy_windows ?? 0);
     const layers = [
-      { value: Number(state.allWindowsManifest?.total_windows ?? 0).toLocaleString(), label: "逐1 nt滑窗", context: "8个ES · 20/30/40/50 nt · 保守性已缓存" },
-      { value: `${state.allWindowsManifest?.complete_low_entropy_windows ?? 0}/${state.allWindowsManifest?.total_windows ?? 0}`, label: "B=500低熵进度", context: "RNAstructure CUDA · 本地持续补算" },
-      { value: silvaCount.toLocaleString(), label: "SILVA LSU底库", context: "全量参考序列 · 已校验MD5" },
-      { value: rfamCount.toLocaleString(), label: "Rfam RF02543", context: "2,616物种 · 结构感知模型" },
-      { value: rodCount.toLocaleString(), label: "ROD完整operon", context: "11,935个基因组 · 已下载校验" },
-      { value: `${rodPanel?.matched_species ?? 37}/${rodPanel?.target_species ?? 135}`, label: "ROD目标物种候选", context: `${Number(rodPanel?.matching_operon_variants ?? 10383).toLocaleString()}条候选 · 尚未ES定位` },
-      { value: `${eukLsu?.matched_species ?? 78}/${eukLsu?.target_species ?? 135}`, label: "EUKARYOME LSU", context: `${Number(eukLsu?.matching_candidates ?? 646).toLocaleString()}条候选 · v2.0全量校验` },
-      { value: `${eukLong?.matched_species ?? 62}/${eukLong?.target_species ?? 135}`, label: "EUKARYOME长读长", context: `${Number(eukLong?.matching_candidates ?? 447).toLocaleString()}条候选 · 同记录5.8S/28S` },
-      { value: `${lsuPass}/${panel}`, label: "NCBI核LSU工作集", context: "版本化原始记录通过QC" },
-      { value: summary.human_reference_es_count, label: "人源ES参考", context: `${summary.directly_mapped_28s_es_count}个已跨物种映射` },
-      { value: summary.mammal_species_count, label: "当前哺乳动物", context: `${summary.es_species_calls}个ES×物种判定` },
-      { value: `${eukPanel?.selected_unique_sequence_md5 ?? 224}/310`, label: "EUK入选唯一序列", context: "按MD5去重 · 候选不等于定位通过" }
+      { value: totalWindows.toLocaleString(), label: "滑动窗口", context: "8个 ES · 1 nt 步长" },
+      { value: `${formalWindows.toLocaleString()}/${totalWindows.toLocaleString()}`, label: "正式 B=500", context: "已完成结构低熵" },
+      { value: previewWindows.toLocaleString(), label: "预览结果", context: "显示实际 B 值" },
+      { value: summary.mammal_species_count, label: "已定位哺乳动物", context: `${summary.es_species_calls} 条 ES 序列` },
+      { value: lsuPass, label: "已核验原始 LSU", context: "用于来源追溯" },
+      { value: summary.human_reference_es_count, label: "人源 ES 参考", context: `${summary.directly_mapped_28s_es_count} 个纳入评分` }
     ];
     document.getElementById("databaseLayerStats").innerHTML = layers.map(item => `
       <article><span>${item.label}</span><strong>${item.value}</strong><small>${item.context}</small></article>`).join("");
@@ -1404,18 +1388,18 @@
       const cells = esIds.map(esId => {
         const call = calls.get(`${species.taxid}|${esId}`);
         if (!call) return '<span class="matrix-cell missing" aria-hidden="true"></span>';
-        return `<a class="matrix-cell pass" href="${call.source_url}" target="_blank" rel="noopener" title="${species.species} × ${esId}：通过定位QC；${call.accession}" aria-label="${species.species} ${esId} 通过定位QC，打开 ${call.accession}"></a>`;
+        return `<a class="matrix-cell pass" href="${call.source_url}" target="_blank" rel="noopener" title="${species.species} × ${esId}：已有 ES 序列；${call.accession}" aria-label="${species.species} ${esId} 已有序列，打开 ${call.accession}"></a>`;
       }).join("");
       return `<div class="matrix-row"><a class="matrix-species" href="${species.source_url}" target="_blank" rel="noopener" title="${species.accession} · NCBI TaxID ${species.taxid}">${species.species}</a>${cells}<strong>${species.es_pass}</strong></div>`;
     }).join("");
     document.getElementById("coverageMatrix").innerHTML = `<div class="matrix-inner" style="--es-count:${esIds.length}"><div class="matrix-header"><span>物种</span>${header}<strong>通过</strong></div>${body}</div>`;
     document.querySelectorAll(".matrix-header button").forEach(button => button.addEventListener("click", () => openEsLandscape(button.dataset.es)));
-    document.getElementById("matrixSummary").textContent = `${summary.pass_calls}/${summary.es_species_calls} 通过定位QC`;
+    document.getElementById("matrixSummary").textContent = `${summary.pass_calls} 条已定位 ES 序列`;
   }
 
   function renderSourceTable() {
     const sources = (state.provenanceCatalog?.databases ?? []).filter(source => Number.isFinite(source.records));
-    document.getElementById("sourceTable").innerHTML = `<table class="provenance-table"><thead><tr><th>来源</th><th>版本/范围</th><th class="numeric">记录数</th><th>状态</th><th>原始入口</th><th>本地校验与用途</th></tr></thead><tbody>${sources.map(source => `<tr>
+    document.getElementById("sourceTable").innerHTML = `<table class="provenance-table"><thead><tr><th>来源</th><th>版本/范围</th><th class="numeric">记录数</th><th>状态</th><th>原始入口</th><th>校验与用途</th></tr></thead><tbody>${sources.map(source => `<tr>
       <td><a href="${source.official_url}" target="_blank" rel="noopener"><strong>${source.name}</strong></a><small>${source.source_id}</small></td>
       <td>${source.version}<small>${source.scope}</small></td>
       <td class="numeric">${source.records === null ? "—" : Number(source.records).toLocaleString()}</td>
@@ -1446,24 +1430,23 @@
     const scopeClass = scopeClassFor(record);
     if (scopeClass === "unresolved") {
       return record.es_id === "ES4L"
-        ? "区间横跨 5.8S 与 28S 两个分子坐标轴，缺少可直接比较的单一 28S 结构范围。"
-        : "区间位于 5.8S，当前没有可与 28S 局部 R2DT 直接比较的结构范围。";
+        ? "横跨 5.8S 与 28S，坐标轴和结构范围尚未统一。"
+        : "位于 5.8S，当前 28S 结构范围不适用。";
     }
     const paired = Number.isFinite(record.paired_fraction_intrasegment)
       ? `${(record.paired_fraction_intrasegment * 100).toFixed(1)}%`
       : "未定";
     if (scopeClass === "core_hold") {
-      return `段内配对比例 ${paired}，未达到 0.30 初步结构门；另有 ${record.external_pair_count ?? "未定"} 个区外配对，存在古老宿主螺旋或核心依赖风险。`;
+      return `R2DT 段内成对比例 ${paired}（< 30%），且有 ${record.external_pair_count ?? "未定"} 个区外配对；存在宿主根部或核心依赖风险。`;
     }
-    const warning = SUBARM_WARNINGS[record.es_id] ? ` ${SUBARM_WARNINGS[record.es_id]}` : "";
-    return `段内配对比例 ${paired}，结构预筛选通过；当前按已知同一 ES、以人为锚点纳入保守性与结构低熵评分。跨物种 CM 仅用于未来推断该 ES 的起源时间，不影响本轮评分。${warning}`;
+    return `R2DT 段内成对比例 ${paired}（≥ 30%），通过 ES 级纳入门控。`;
   }
 
   function scopeAction(record) {
     const scopeClass = scopeClassFor(record);
-    if (scopeClass === "unresolved") return "仅展示。先统一坐标轴并冻结结构范围，再决定是否生成窗口。";
-    if (scopeClass === "core_hold") return "仅展示，不生成保守性、低熵或候选排名窗口。";
-    return "已纳入逐 1 nt 窗口评分；完整 B=500 结果进入正式排名，其余窗口随断点续算逐步补齐。";
+    if (scopeClass === "unresolved") return "仅展示人源参考；统一坐标与结构范围后再评估。";
+    if (scopeClass === "core_hold") return "仅展示人源参考，不生成评分窗口。";
+    return "按人源 ES 全跨度生成逐 1 nt 窗口；正式与预览结果分开标记。";
   }
 
   function renderScopeCurrent() {
@@ -1471,7 +1454,7 @@
     const record = state.datasets[state.currentEs]?.metadata;
     if (!target || !record) return;
     const scope = SCOPE_LABELS[scopeClassFor(record)];
-    target.innerHTML = `<b class="scope-inline-status ${scope.className}">${scope.label}</b><span>${escapeHtml(scopeReason(record))}</span>`;
+    target.innerHTML = `<b class="scope-inline-status ${scope.className}">${scope.label}</b>`;
   }
 
   function renderScopePage() {
@@ -1482,16 +1465,16 @@
       return result;
     }, { preliminary: 0, core_hold: 0, unresolved: 0 });
     document.getElementById("scopeSummary").innerHTML = `
-      <article><span>人源 ES 总数</span><strong>${records.length}</strong><small>全部保留在页面中</small></article>
-      <article class="preliminary"><span>纳入当前评分</span><strong>${counts.preliminary}</strong><small>坐标可用，结构预筛选通过</small></article>
-      <article class="core-hold"><span>核心配对风险暂停</span><strong>${counts.core_hold}</strong><small>仅展示，不生成窗口</small></article>
-      <article class="unresolved"><span>坐标或结构未决</span><strong>${counts.unresolved}</strong><small>先完成范围复核</small></article>`;
+      <article><span>人源 ES</span><strong>${records.length}</strong><small>全部保留</small></article>
+      <article class="preliminary"><span>纳入评分</span><strong>${counts.preliminary}</strong><small>通过 ES 级门控</small></article>
+      <article class="core-hold"><span>结构风险暂停</span><strong>${counts.core_hold}</strong><small>仅展示人源参考</small></article>
+      <article class="unresolved"><span>范围未决</span><strong>${counts.unresolved}</strong><small>仅展示人源参考</small></article>`;
 
     const filters = [
       ["all", `全部 ${records.length}`],
       ["preliminary", `可评分 ${counts.preliminary}`],
-      ["core_hold", `核心风险 ${counts.core_hold}`],
-      ["unresolved", `定位未决 ${counts.unresolved}`]
+      ["core_hold", `结构风险 ${counts.core_hold}`],
+      ["unresolved", `范围未决 ${counts.unresolved}`]
     ];
     document.getElementById("scopeFilters").innerHTML = filters.map(([key, label]) =>
       `<button type="button" data-scope-filter="${key}" class="${state.scopeFilter === key ? "active" : ""}">${label}</button>`
@@ -1666,9 +1649,8 @@
     .then(() => Promise.all([loadBuiltInAllEsAlignments(), loadAllWindowManifest()]))
     .then(analyzeWithWindowCache)
     .catch(error => {
-    document.getElementById("datasetLabel").textContent = "数据载入失败";
-    document.getElementById("analysisStatus").textContent = error.message;
-    document.getElementById("dataNotice").textContent = "请检查本地数据文件与服务路径";
-    console.error(error);
-  });
+      document.getElementById("analysisStatus").textContent = `载入失败：${error.message}`;
+      document.getElementById("dataNotice").textContent = "数据文件暂不可用";
+      console.error(error);
+    });
 })();

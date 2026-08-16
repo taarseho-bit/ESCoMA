@@ -7,13 +7,13 @@
   <link rel="canonical" href="https://taarseho-bit.github.io/ESCoMA/">
   <link rel="icon" type="image/svg+xml" href="assets/brand/escoma-mark-app-light.svg?v=brand-v1">
   <title>ESCoMA｜扩增区段保守模块图谱</title>
-  <link rel="stylesheet" href="styles.css?v=escoma-scoring-scope-b63">
+  <link rel="stylesheet" href="styles.css?v=escoma-copy-audit-b64">
 </head>
 <body>
   <header class="app-header">
     <div class="brand-block">
       <div class="brand-mark"><img src="assets/brand/escoma-mark-primary.svg?v=brand-v1" alt="ESCoMA 标志" width="40" height="40"></div>
-      <div><div class="brand-line">ESCoMA <span>真实数据工作台</span></div><h1>扩增区段保守模块图谱</h1></div>
+      <div><div class="brand-line">ESCoMA</div><h1>扩增区段保守模块图谱</h1></div>
     </div>
     <div class="header-actions">
       <button id="exportButton" class="button button-primary" type="button">导出排行结果</button>
@@ -24,21 +24,18 @@
     <section class="control-band" aria-label="分析参数">
       <label><span>扩增区段</span><select id="esSelect"><option value="">正在载入人源参考...</option></select></label>
       <div class="window-picker" id="windowPicker"><span class="control-label">人源窗口长度</span><div class="window-picker-row"><div id="selectedWindowChips" class="window-chips" aria-label="已加入的窗口长度"></div><div class="window-add-wrap"><button id="windowAddButton" class="window-add-button" type="button" aria-expanded="false" aria-controls="windowAddMenu">＋ 添加长度</button><div id="windowAddMenu" class="window-add-menu" hidden><button type="button" data-window-size="20">20 nt</button><button type="button" data-window-size="30">30 nt</button><button type="button" data-window-size="40">40 nt</button><button type="button" data-window-size="50">50 nt</button></div></div></div></div>
-      <label><span>候选视图</span><select id="rankMode"><option value="all" selected>全部可评分窗口</option><option value="peaks">代表窗口</option></select></label>
+      <label><span>候选视图</span><select id="rankMode"><option value="all" selected>全部窗口</option><option value="peaks">去冗余窗口</option></select></label>
     </section>
 
     <section class="context-strip" aria-live="polite">
-      <div><span>数据集</span><strong id="datasetLabel">正在载入</strong></div>
       <div><span>参考坐标</span><strong>人28S · NR_003287.4</strong></div>
-      <div><span>参与物种</span><strong id="speciesCount">--</strong></div>
-      <div><span>人源ES长度</span><strong id="alignmentLength">--</strong></div>
-      <div><span>本地LSU库</span><strong id="lsuLibraryStatus">正在读取QC</strong></div>
-      <div><span>分析状态</span><strong id="analysisStatus">跨物种MSA待构建</strong></div>
+      <div><span>评分物种</span><strong id="speciesCount">--</strong></div>
+      <div><span>窗口数据</span><strong id="analysisStatus">正在读取</strong></div>
     </section>
 
     <section class="analysis-scope-note" aria-label="评分适用范围">
-      <div><strong>当前 ES 边界判定</strong><span id="scopeCurrentSummary">正在读取 Human ES Reference v1.2</span></div>
-      <button id="openScopeTab" class="scope-detail-button" type="button">查看 22 个 ES 的纳入与排除依据</button>
+      <div><strong>当前 ES</strong><span id="scopeCurrentSummary">正在读取参考</span></div>
+      <button id="openScopeTab" class="scope-detail-button" type="button">查看评分依据</button>
     </section>
 
     <nav class="view-tabs" aria-label="分析视图">
@@ -50,11 +47,11 @@
     </nav>
 
     <section id="landscapeTab" class="tab-panel active">
-      <section class="summary-grid" aria-label="最高分窗口摘要">
-        <article class="summary-card primary-card"><span class="summary-label">人28S最高分窗口</span><strong id="topCoordinates">--</strong><span id="topContext">--</span></article>
+      <section class="summary-grid" aria-label="当前排序首位窗口摘要">
+        <article class="summary-card primary-card"><span class="summary-label">当前排序首位窗口</span><strong id="topCoordinates">--</strong><span id="topContext">--</span></article>
         <article class="summary-card"><span class="summary-label">目平衡保守性</span><strong id="topScore">--</strong><span>非人哺乳动物 · 0–100</span></article>
-        <article class="summary-card"><span class="summary-label">结构低熵</span><strong id="topLowEntropy">--</strong><span id="topEntropyContext">RNAstructure CUDA · B=500</span></article>
-        <article class="summary-card"><span class="summary-label">哺乳动物目覆盖</span><strong id="topCoverage">--</strong><span id="topCoverageContext">待跨物种MSA</span></article>
+        <article class="summary-card"><span class="summary-label">结构低熵</span><strong id="topLowEntropy">--</strong><span id="topEntropyContext">正在读取</span></article>
+        <article class="summary-card"><span class="summary-label">哺乳动物目覆盖</span><strong id="topCoverage">--</strong><span id="topCoverageContext">--</span></article>
       </section>
 
       <section class="alignment-block">
@@ -65,7 +62,7 @@
       </section>
 
       <section class="analysis-section landscape-section">
-        <div class="section-heading"><div><h2>人28S二维候选景观</h2><p>轨道一：目平衡保守性；轨道二：结构低熵</p></div><div id="legend" class="legend" aria-label="窗口长度图例"></div></div>
+        <div class="section-heading"><div><h2>人28S二维候选景观</h2></div><div id="legend" class="legend" aria-label="窗口长度图例"></div></div>
         <div id="chart" class="chart-wrap genome-chart" role="img" aria-label="保守性和结构低熵双轨图"></div>
         <div id="chartTooltip" class="chart-tooltip" hidden></div>
       </section>
@@ -74,121 +71,114 @@
     <section id="rankingTab" class="tab-panel" hidden>
       <div class="ranking-workspace">
         <div class="ranking-section">
-          <div class="section-heading compact-heading"><div><h2>人源候选窗口排行</h2><p id="rankingMethodNote">全部窗口按保守性预排序；完成低熵后可进入二维联合排行</p></div><div class="ranking-controls"><label class="compact-select"><span>排序依据</span><select id="rankMetric"><option value="auto">自动</option><option value="conservation">保守性</option><option value="low_entropy">结构低熵</option><option value="joint">联合分数</option></select></label><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div></div>
-          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">结构低熵</th><th class="numeric">联合分数</th><th class="numeric">目覆盖</th><th>计算状态</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
+          <div class="section-heading compact-heading"><div><h2>人源候选窗口排行</h2><p id="rankingMethodNote">合格窗口 · 按当前指标排序</p></div><div class="ranking-controls"><label class="compact-select"><span>排序依据</span><select id="rankMetric"><option value="auto">自动</option><option value="conservation">保守性</option><option value="low_entropy">结构低熵</option><option value="joint">联合分数</option></select></label><label class="compact-select"><span>显示数量</span><select id="topNSelect"><option value="10">前10</option><option value="20" selected>前20</option><option value="50">前50</option></select></label></div></div>
+          <div class="table-scroll"><table><thead><tr><th>序号</th><th>窗口</th><th>人源ES坐标</th><th>人28S坐标</th><th class="numeric">保守性</th><th class="numeric">结构低熵</th><th class="numeric">联合分数</th><th class="numeric">目覆盖</th><th>低熵状态</th><th>具体人源序列</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
         </div>
       </div>
     </section>
 
     <section id="statisticsTab" class="tab-panel statistics-tab" hidden>
       <section class="statistics-heading">
-        <div><span class="eyebrow">跨物种 ES 数据矩阵</span><h2>完整缓存数据与质量控制总览</h2><p>只统计已经完成定位、MSA、保守性、结构门控和零模型的 ES；缺失与未决记录不显示</p></div>
-        <div class="statistics-key" aria-label="定位状态图例"><span><i class="status-pass"></i>完整缓存且通过质控</span></div>
+        <div><span class="eyebrow">跨物种 ES 数据</span><h2>数据总览</h2><p>汇总已定位序列、ES 覆盖与评分进度；未纳入评分的记录仍保留来源。</p></div>
       </section>
 
       <section id="databaseLayerStats" class="database-layer-stats" aria-label="数据层级统计"></section>
 
       <section class="inventory-section">
         <div class="section-heading">
-          <div><h2>已获取的跨物种核 LSU 原始序列</h2><p id="inventoryStatus">正在读取版本化序列清单</p></div>
+          <div><h2>跨物种核 LSU 原始序列</h2><p id="inventoryStatus">正在读取序列清单</p></div>
           <div class="inventory-controls">
             <div id="inventoryFilters" class="scope-filters" aria-label="物种范围筛选"></div>
             <label class="inventory-search"><span>检索</span><input id="inventorySearch" type="search" placeholder="物种、类群或 accession"></label>
           </div>
         </div>
-        <div class="inventory-note"><strong>数据语义</strong><span>这里只列出已通过原始核 LSU 质量控制且真实存在的序列。哺乳动物可作为评分源；非哺乳动物完整保留并可查看原序列，但不参与当前评分。</span></div>
+        <div class="inventory-note"><strong>用途</strong><span>原始 LSU 用于来源追溯；实际计分物种以当前 ES 数据为准，非哺乳动物仅展示。</span></div>
         <div id="inventoryTable" class="table-scroll"></div>
         <div id="inventorySequence" class="inventory-sequence-viewer" aria-live="polite"></div>
       </section>
 
       <section class="statistics-layout">
         <article class="statistics-panel">
-          <div class="section-heading compact-heading"><div><h2>各ES物种覆盖</h2><p>只显示有完整二维缓存的 ES</p></div></div>
+          <div class="section-heading compact-heading"><div><h2>各ES物种覆盖</h2><p>已定位到各 ES 的物种数</p></div></div>
           <div id="esCoverageChart" class="coverage-chart" role="img" aria-label="每个ES通过定位质控的物种数"></div>
         </article>
         <article class="statistics-panel">
-          <div class="section-heading compact-heading"><div><h2>各物种ES覆盖</h2><p>按通过定位QC的ES数量排序</p></div></div>
+          <div class="section-heading compact-heading"><div><h2>各物种ES覆盖</h2><p>按已覆盖 ES 数量排序</p></div></div>
           <div id="speciesCoverageChart" class="species-coverage-chart" role="img" aria-label="每个物种通过定位质控的ES数"></div>
         </article>
       </section>
 
       <section class="matrix-section">
-        <div class="section-heading"><div><h2>ES × 物种缓存矩阵</h2><p>有色格对应可追溯的实际序列；空位不显示缺失值，点击 ES 列名进入景观</p></div><strong id="matrixSummary" class="matrix-summary">--</strong></div>
+        <div class="section-heading"><div><h2>ES × 物种序列矩阵</h2><p>有色格表示已有 ES 序列；点击来源记录或 ES 列名查看详情。</p></div><strong id="matrixSummary" class="matrix-summary">--</strong></div>
         <div id="coverageMatrix" class="coverage-matrix"></div>
       </section>
 
       <section class="source-section">
-        <div class="section-heading"><div><h2>数据库来源与可追溯状态</h2><p>点击来源、原始文件或 DOI 可返回官方记录；不同数据库存在重叠，不相加为唯一序列总数</p></div></div>
+        <div class="section-heading"><div><h2>数据库来源与可追溯状态</h2><p>来源链接可追溯；不同数据库记录可能重叠。</p></div></div>
         <div id="sourceTable" class="table-scroll"></div>
       </section>
 
       <section class="source-section literature-section">
-        <div class="section-heading"><div><h2>文献与结构证据</h2><p>用于核对 ES 命名、边界和跨物种结构；文献证据不自动等同于已完成序列定位</p></div></div>
+        <div class="section-heading"><div><h2>文献与结构证据</h2><p>用于核对 ES 命名、边界和结构，不能替代序列坐标映射。</p></div></div>
         <div id="literatureTable" class="table-scroll"></div>
       </section>
     </section>
 
     <section id="scopeTab" class="tab-panel scope-tab" hidden>
       <section class="scope-heading">
-        <div><span class="eyebrow">Human ES Reference v1.2 · 评分资格审计</span><h2>22 个 ES 的纳入、暂停与未决依据</h2><p>当前任务是在已归入同一 ES 的跨物种序列中，以人为锚点寻找局部保守、结构低熵窗口，不重复判定同源关系或 ES 出生节点。下面 8 个坐标与结构范围可用的 ES 纳入当前评分；跨物种 CM 仅作为未来的进化起源分析。</p></div>
-        <div class="scope-version"><span>本轮边界原则</span><strong>使用已核验的人源 ES 全跨度</strong><small>子臂划分与出生节点不作为当前评分前置条件</small></div>
+        <div><span class="eyebrow">Human ES Reference v1.2 · 评分边界</span><h2>22 个 ES 的纳入与暂停依据</h2><p>以人为锚点，在同一 ES 内筛选保守且结构低熵的局部窗口；当前 8 个 ES 纳入评分。</p></div>
+        <div class="scope-version"><span>当前边界</span><strong>已核验的人源 ES 全跨度</strong><small>ES 内未另设核心区、宿主根部或子臂掩膜</small></div>
       </section>
 
       <section id="scopeSummary" class="scope-summary" aria-label="ES评分资格统计"></section>
 
       <section class="scope-boundary-explainer">
-        <div><strong>人源 ES 全跨度</strong><span>当前逐 1 nt 窗口的统一坐标范围；边界已通过人源参考序列与唯一锚点核验。</span></div>
-        <div><strong>Parker 插入代理</strong><span>偏向演化插入的线性边界；与宿主螺旋跨度是两套定义，错位时必须重新提取和比对。</span></div>
-        <div><strong>本轮评分范围</strong><span>窗口完整落在人源 ES 全跨度内即可参与当前评分；若未来改用更窄插入代理或子臂边界，必须重新提取序列并重建 MSA。</span></div>
+        <div><strong>当前使用</strong><span>在人源 ES 全跨度内，以 1 nt 步长生成 20/30/40/50 nt 窗口。</span></div>
+        <div><strong>边界变更</strong><span>若改用 Parker 插入代理或子臂边界，必须重新提取序列并重建 MSA。</span></div>
       </section>
 
       <section class="scope-decision-map" aria-label="ES排除与预筛选名单">
         <div class="scope-decision-row preliminary">
           <strong>纳入当前保守性与结构低熵评分</strong>
           <span class="scope-es-list"><b>ES5L</b><b>ES7L</b><b>ES9L</b><b>ES15L</b><b>ES19L</b><b>ES20L</b><b>ES27L</b><b>ES39L</b></span>
-          <p>这 8 个 ES 的人源坐标可用，段内配对比例达到结构预筛选阈值 P<sub>intra</sub> ≥ 0.30，因此生成逐 1 nt 保守性窗口，并对完成 B=500 零模型的窗口计算结构低熵与联合评分。这里比较的是同一 ES 内部的局部模块，不把 CM 出生节点判定作为评分前置条件。</p>
+          <p>人源坐标可用，且 R2DT 模板投影的 ES 段内成对比例 ≥ 0.30。该判定是 ES 级纳入门控，不是窗口分数。</p>
         </div>
         <div class="scope-decision-row core-hold">
           <strong>暂停评分：古老宿主螺旋或核心依赖配对风险</strong>
           <span class="scope-es-list"><b>ES8L</b><b>ES10L</b><b>ES12L</b><b>ES13L</b><b>ES24L</b><b>ES26L</b><b>ES30L</b><b>ES31L</b><b>ES41L</b><b>ES43L</b><b>ES44L</b><b>ES45L</b></span>
-          <p>12 个 ES 的段内配对比例 P<sub>intra</sub> &lt; 0.30，并存在区外配对。当前边界可能主要覆盖宿主根螺旋或依赖核糖体核心的结构，若直接滑窗会把古老核心约束误当成 ES 局部保守性，因此只展示原始记录，不生成保守性、低熵或候选排名。</p>
+          <p>R2DT 段内成对比例 &lt; 0.30 且存在区外配对，可能混入宿主根螺旋或核心依赖约束；仅展示人源参考。</p>
         </div>
         <div class="scope-decision-row unresolved">
           <strong>暂停评分：坐标轴或结构范围未决</strong>
           <span class="scope-es-list"><b>ES3L</b><b>ES4L</b></span>
-          <p>ES3L 位于 5.8S；ES4L 横跨 5.8S 与 28S。当前分析使用人源成熟 28S 坐标轴和局部 28S 结构，不能在没有复合 LSU 坐标映射的情况下直接生成窗口。两者需先完成 5.8S/28S 联合定位与结构范围冻结。</p>
+          <p>ES3L 位于 5.8S，ES4L 横跨 5.8S 与 28S；需先统一坐标轴并冻结结构范围。</p>
         </div>
       </section>
 
       <section class="scope-table-section">
-        <div class="section-heading compact-heading"><div><h2>逐 ES 判定表</h2><p>点击筛选查看对应类别；坐标均为人源成熟 rRNA 参考坐标</p></div><div id="scopeFilters" class="scope-filters" aria-label="边界状态筛选"></div></div>
+        <div class="section-heading compact-heading"><div><h2>逐 ES 判定表</h2><p>坐标均为人源成熟 rRNA；来源链接可追溯。</p></div><div id="scopeFilters" class="scope-filters" aria-label="边界状态筛选"></div></div>
         <div id="scopeTable" class="table-scroll"></div>
-      </section>
-
-      <section class="scope-caveat">
-        <strong>边界使用说明</strong>
-        <p>当前评分统一使用已核验的人源 ES 全跨度。ES7L、ES15L 与 ES27L 的历史子臂命名不作为本轮窗口边界，因此不阻塞整段评分；若未来切换为 Parker 插入代理或开展子臂级分析，超出当前缓存的序列必须重新提取并重建 MSA，不能直接改坐标标签复用旧结果。</p>
       </section>
     </section>
 
     <section id="methodsTab" class="tab-panel methods-tab" hidden>
       <section class="methods-heading">
-        <div><span class="eyebrow">ESCoMA 计算定义</span><h2>跨物种保守性与结构低熵评分</h2><p>所有公式对应当前静态缓存；人源定义坐标，非人哺乳动物参与保守性评分。</p></div>
-        <div class="method-version"><span>当前实现</span><strong>EvoES SOP v2.0</strong><small>RNAstructure 5.7 CUDA · B=500 · schema 2.1.0</small></div>
+        <div><span class="eyebrow">ESCoMA 计算定义</span><h2>跨物种保守性与结构低熵评分</h2><p>人源定义坐标，非人哺乳动物参与评分。</p></div>
+        <div class="method-version"><span>当前实现</span><strong>EvoES SOP v2.0</strong><small>正式 B=500 · 预览显示实际 B</small></div>
       </section>
 
       <section class="method-flow" aria-label="计算流程">
-        <article><span>01</span><strong>同源定位</strong><small>锚点约束的 E-INS-i MSA</small></article>
+        <article><span>01</span><strong>ES 级坐标映射</strong><small>全长 LSU MSA 投影至人源区间</small></article>
         <i aria-hidden="true">→</i>
         <article><span>02</span><strong>人源滑动窗口</strong><small>20 / 30 / 40 / 50 nt</small></article>
         <i aria-hidden="true">→</i>
-        <article><span>03</span><strong>两条独立轨道</strong><small>保守性与结构低熵</small></article>
+        <article><span>03</span><strong>两条独立轨道</strong><small>目平衡保守性 + 结构低熵</small></article>
         <i aria-hidden="true">→</i>
-        <article><span>04</span><strong>候选排序</strong><small>Pareto 前沿与代表峰</small></article>
+        <article><span>04</span><strong>排序与去冗余</strong><small>当前指标降序 · 重叠阈值 10 nt</small></article>
       </section>
 
       <section id="method-alignment" class="formula-section method-chapter">
-        <div class="chapter-heading"><span>01</span><div><h2>坐标映射与可判读性</h2><p>窗口按人源无缺口 ES 坐标计数，MSA 只负责把各物种的同源碱基映射到对应列。</p></div></div>
+        <div class="chapter-heading"><span>01</span><div><h2>坐标映射与可判读性</h2><p>哺乳动物全长 LSU 经 MAFFT E-INS-i 对齐，再按冻结的人源坐标投影同一 ES；窗口按人源无缺口坐标计数。</p></div></div>
         <div class="formula-layout method-split">
           <div class="formula-copy method-copy">
             <div class="math-row primary-math">
@@ -197,7 +187,7 @@
               <p>仅当 <b>R<sub>i</sub>(W) ≥ 0.80</b> 时，该物种进入当前窗口的评分。</p>
             </div>
             <dl class="state-definitions">
-              <div><dt>M</dt><dd>与人源一致</dd></div><div><dt>X</dt><dd>明确替换</dd></div><div><dt>D</dt><dd>明确缺失</dd></div><div><dt>I</dt><dd>相对人源插入</dd></div><div><dt>U</dt><dd>N、截断或未知，不计入分母</dd></div>
+              <div><dt>M</dt><dd>与人源一致</dd></div><div><dt>X</dt><dd>明确替换</dd></div><div><dt>D</dt><dd>可判读缺失；计入 R<sub>i</sub> 分子并降低 C<sub>i</sub></dd></div><div><dt>I</dt><dd>相对人源插入</dd></div><div><dt>U</dt><dd>N、截断或未知；降低 R<sub>i</sub>，不进入 C<sub>i</sub> 分母</dd></div>
             </dl>
           </div>
           <div class="msa-example" aria-label="MSA状态映射示例">
@@ -209,6 +199,7 @@
             <div class="msa-summary"><span>B：含 X</span><span>C：含 D</span><span>D：含 U</span></div>
           </div>
         </div>
+        <div class="audit-line"><strong>ES 物种面板</strong><span>非人物种须先通过 ES 左右侧翼各最多 20 nt、覆盖率 ≥ 0.80 的 QC</span><span>G<sub>planned</sub> 为该 ES 面板保留的哺乳动物目数</span></div>
       </section>
 
       <section id="method-conservation" class="formula-section method-chapter">
@@ -234,13 +225,13 @@
       </section>
 
       <section id="method-entropy" class="formula-section method-chapter">
-        <div class="chapter-heading"><span>03</span><div><h2>组成校正的结构低熵</h2><p>折叠背景固定为“上游 100 nt + 完整 ES + 下游 100 nt”；该指标不是 MSA 序列 Shannon 熵。</p></div></div>
+        <div class="chapter-heading"><span>03</span><div><h2>组成校正的结构低熵</h2><p>折叠背景为完整 ES 及上下游各最多 100 nt，受 28S 参考边界截断；该指标不是 MSA 序列 Shannon 熵。</p></div></div>
         <div class="entropy-layout">
           <div class="entropy-steps">
             <div class="math-row"><span class="math-label">位置结构熵</span><div class="math-expression"><i>H</i><sub>i</sub> = −<i>p</i><sub>i0</sub> ln <i>p</i><sub>i0</sub> − <span class="math-sum">Σ</span><sub>j≠i</sub><i>p</i><sub>ij</sub> ln <i>p</i><sub>ij</sub></div><p>p<sub>ij</sub> 来自 RNAstructure 5.7 partition-cuda 的碱基配对概率。</p></div>
-            <div class="math-row"><span class="math-label">窗口观测熵</span><div class="math-expression"><i>H</i><sub>obs</sub>(W) = <span class="math-frac"><span>1</span><span><i>L</i><sub>W</sub></span></span><span class="math-sum">Σ</span><sub>i∈W</sub><i>H</i><sub>i</sub></div><p>所有窗口共享相同的完整 ES 与侧翼背景。</p></div>
-            <div class="math-row"><span class="math-label">结构门控</span><div class="math-expression"><i>P</i><sub>intra</sub>(W) = <span class="math-frac"><span>1</span><span><i>L</i><sub>W</sub></span></span><span class="math-sum">Σ</span><sub>i∈W</sub><span class="math-sum">Σ</span><sub>j∈ES</sub><i>p</i><sub>ij</sub> ≥ 0.30</div><p>P<sub>external</sub> 单独记录，不直接并入得分。</p></div>
-            <div class="math-row active"><span class="math-label">零模型百分位</span><div class="math-expression"><i>p</i><sub>LE</sub> = <span class="math-frac"><span>1 + <i>N</i><sub>≤</sub></span><span><i>B</i> + 1</span></span><span class="math-separator">；</span><i>S</i><sub>LE</sub> = 100(1 − <i>p</i><sub>LE</sub>)</div><p>N<sub>≤</sub> 为 H<sub>null</sub> ≤ H<sub>obs</sub> 的次数；B=500，窗口保持二核苷酸组成及首末碱基。</p></div>
+            <div class="math-row"><span class="math-label">窗口观测熵</span><div class="math-expression"><i>H</i><sub>obs</sub>(W) = <span class="math-frac"><span>1</span><span><i>L</i><sub>W</sub></span></span><span class="math-sum">Σ</span><sub>i∈W</sub><i>H</i><sub>i</sub></div><p>同一 ES 内的窗口共享相同折叠背景。</p></div>
+            <div class="math-row"><span class="math-label">窗口结构门</span><div class="math-expression"><i>P</i><sub>intra</sub>(W) = <span class="math-frac"><span>1</span><span><i>L</i><sub>W</sub></span></span><span class="math-sum">Σ</span><sub>i∈W</sub><span class="math-sum">Σ</span><sub>j∈ES</sub><i>q</i><sub>ij</sub> ≥ 0.30</div><p>q<sub>ij</sub>、P<sub>intra</sub> 与 P<sub>external</sub> 来自 ViennaRNA 2.7 预筛；P<sub>external</sub> 仅记录。</p></div>
+            <div class="math-row active"><span class="math-label">零模型百分位</span><div class="math-expression"><i>p</i><sub>LE</sub> = <span class="math-frac"><span>1 + <i>N</i><sub>≤</sub></span><span><i>B</i> + 1</span></span><span class="math-separator">；</span><i>S</i><sub>LE</sub> = 100(1 − <i>p</i><sub>LE</sub>)</div><p>N<sub>≤</sub> 为 H<sub>null</sub> ≤ H<sub>obs</sub> 的次数；正式 B=500，预览显示实际 B。随机序列保持二核苷酸组成及首末碱基。</p></div>
           </div>
           <div class="entropy-scale" role="img" aria-label="结构低熵零模型示意">
             <div class="distribution"><span><i style="width:92%"></i></span><b>真实窗口低于多数随机序列</b><strong>S<sub>LE</sub> 高</strong></div>
@@ -249,35 +240,37 @@
           </div>
         </div>
         <div class="audit-line"><strong>Monte Carlo 误差</strong><div class="math-expression compact-math">SE(<i>S</i><sub>LE</sub>) = 100 √<span class="root-content"><span class="math-frac"><span><i>p</i><sub>LE</sub>(1−<i>p</i><sub>LE</sub>)</span><span><i>B</i>+1</span></span></span></div><span>随机种子由窗口 ID 确定</span></div>
+        <div class="audit-line"><strong>结构来源</strong><span>ES 级纳入：R2DT 模板投影</span><span>窗口预筛：ViennaRNA 2.7；低熵：RNAstructure 5.7 CUDA</span></div>
       </section>
 
       <section id="method-ranking" class="formula-section method-chapter">
         <div class="chapter-heading"><span>04</span><div><h2>二维筛选与候选排序</h2><p>保守性与结构低熵始终独立展示；只有生成单一排行时才计算联合分数。</p></div></div>
         <div class="joint-score-line"><span>联合排序分数</span><div class="math-expression"><i>S</i><sub>joint</sub> = √<span class="root-content"><i>S</i><sub>cons</sub> × <i>S</i><sub>LE</sub></span></div><p>几何平均要求两条证据同时较高，任一低分都会限制联合分数。</p></div>
         <div class="selection-diagram">
-          <div><span>二维证据</span><strong>(S<sub>cons</sub>, S<sub>LE</sub>)</strong><small>两个分数不互相抵消</small></div><i>→</i>
-          <div><span>Pareto 前沿</span><strong>保留不存在双维优势竞争者的窗口</strong></div><i>→</i>
-          <div><span>重叠合并</span><strong>重叠至少 10 nt 的窗口归为同一候选峰</strong></div><i>→</i>
-          <div><span>峰代表</span><strong>每个峰保留 S<sub>joint</sub> 最高窗口</strong></div>
+          <div><span>二维证据</span><strong>(S<sub>cons</sub>, S<sub>LE</sub>)</strong><small>两个分数独立保留</small></div><i>→</i>
+          <div><span>当前指标排序</span><strong>保守性、低熵或联合分数降序</strong></div><i>→</i>
+          <div><span>可选去冗余</span><strong>依次保留；与已保留窗口重叠 ≥ 10 nt 者剔除</strong></div>
         </div>
-        <div class="audit-line"><strong>质量门槛</strong><span>低覆盖或 P<sub>intra</sub> 未通过者排除</span><span>Δ<sub>LOO</sub> &gt; 10 或零模型低多样性转人工复核</span></div>
+        <div class="audit-line"><strong>质量门槛</strong><span>低目覆盖或 P<sub>intra</sub> &lt; 0.30 不进入候选排行；景观仍显示已有轨迹</span><span>Δ<sub>LOO</sub> &gt; 10 或零模型低多样性：建议人工复核</span></div>
       </section>
 
       <section class="formula-section method-notes method-chapter">
-        <div class="chapter-heading"><span>05</span><div><h2>坐标与解释边界</h2><p>下列规则决定结果能否进入图、排行与导出文件。</p></div></div>
+        <div class="chapter-heading"><span>05</span><div><h2>坐标与解释边界</h2><p>下列规则限定结果的使用范围。</p></div></div>
         <dl class="definition-grid">
           <div><dt>人源 ES 坐标</dt><dd>从人源 MSA 序列删除缺口后按 1 开始计数，是滑动窗口和实验靶点设计的主坐标。</dd></div>
           <div><dt>人 28S 绝对坐标</dt><dd>人源 ES 坐标加该 ES 在参考 28S 中的起始偏移量，仅用于已经建立可靠坐标映射的 ES。</dd></div>
           <div><dt>评分物种</dt><dd>仅非人哺乳动物参与评分；人源是锚点，其他类群即使后续加入也只展示、不标记得分。</dd></div>
-          <div><dt>缺失策略</dt><dd>未定位、低覆盖、结构门控失败或零模型未完成的窗口不进入图、排行和导出，不以 0 分替代。</dd></div>
-          <div><dt>静态缓存</dt><dd>MAFFT、RNAstructure 5.7 partition-cuda 与 B=500 零模型均在离线脚本中完成；GPU 引擎使用 CUDA 11.8、sm_89 与 float fast-math。GitHub Pages 只下载 JSON，不执行服务端计算。</dd></div>
-          <div><dt>引擎版本</dt><dd>当前低熵分数全部来自同一 RNAstructure CUDA 引擎；不可与旧版 ViennaRNA CPU 分数直接混合作为同一量表排序。</dd></div>
-          <div><dt>解释边界</dt><dd>当前评分回答“同一 ES 内哪一段更保守且结构更确定”，不回答该 ES 在哪个祖先节点出现。出生节点可在后续用跨物种 CM 单独研究，但不影响本轮窗口排名。</dd></div>
+          <div><dt>结果状态</dt><dd>正式 B=500；较小 B 标为预览。</dd></div>
+          <div><dt>缺失策略</dt><dd>保守性排序可显示仅有保守性分数的窗口；低熵与联合排序只纳入已有对应分数的窗口，缺失不补 0。</dd></div>
+          <div><dt>静态缓存</dt><dd>MSA、结构概率和零模型均离线计算；网页只读取版本化 JSON，不在浏览器中重新评分。</dd></div>
+          <div><dt>构建一致性</dt><dd>当前处于统一构建重算过渡期；跨构建结果不作严格同量表比较。</dd></div>
+          <div><dt>解释边界</dt><dd>排名只回答同一 ES 内哪一段更保守且结构更确定，不用于 ES 间效应量比较或推断起源时间。</dd></div>
+          <div><dt>实验前复核</dt><dd>当前未应用人群 rDNA 变异、多拷贝单倍型、可及性或脱靶掩膜；候选进入实验前需另行核对。</dd></div>
         </dl>
       </section>
     </section>
 
-    <footer class="method-footer"><span><i class="method-symbol match"></i>保守性 = 目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>结构低熵 = RNAstructure CUDA + 二核苷酸零模型</span><span><i class="method-symbol score"></i>人源仅作坐标锚点</span><strong id="dataNotice">页面只显示完整离线缓存结果</strong></footer>
+    <footer class="method-footer"><span><i class="method-symbol match"></i>保守性：目内平均后目间等权</span><span id="entropyMethod"><i class="method-symbol coverage"></i>低熵：二核苷酸零模型</span><span><i class="method-symbol score"></i>人源为坐标锚点</span><strong id="dataNotice">正在读取评分物种</strong></footer>
   </main>
 
   <div id="insertionDialog" class="insertion-popover" popover="auto" role="dialog" aria-labelledby="insertionDialogTitle">
@@ -287,6 +280,6 @@
     </section>
   </div>
 
-  <script src="app.js?v=escoma-scoring-scope-b63"></script>
+  <script src="app.js?v=escoma-copy-audit-b64"></script>
 </body>
 </html>
