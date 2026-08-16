@@ -114,15 +114,14 @@
   };
 
   const SCOPE_LABELS = {
-    preliminary: { label: "候选预筛选", short: "预筛选", className: "preliminary" },
+    preliminary: { label: "纳入当前评分", short: "可评分", className: "preliminary" },
     core_hold: { label: "核心配对风险暂停", short: "核心风险", className: "core-hold" },
     unresolved: { label: "坐标或结构范围未决", short: "定位未决", className: "unresolved" }
   };
 
   const SUBARM_WARNINGS = {
     ES7L: "ES7L-a/b/c-h 的精确人源子臂边界尚未全部冻结。",
-    ES15L: "ES15L-A 名称已有文献依据，但当前参考坐标尚未冻结。",
-    ES27L: "ES27L-a/c 边界未冻结；ES27L-b 的文献区间坐标轴仍待与 NR_003287.4 核对。"
+    ES15L: "ES15L-A 名称已有文献依据，但当前参考坐标尚未冻结。"
   };
 
   function scopeClassFor(record) {
@@ -1457,14 +1456,14 @@
       return `段内配对比例 ${paired}，未达到 0.30 初步结构门；另有 ${record.external_pair_count ?? "未定"} 个区外配对，存在古老宿主螺旋或核心依赖风险。`;
     }
     const warning = SUBARM_WARNINGS[record.es_id] ? ` ${SUBARM_WARNINGS[record.es_id]}` : "";
-    return `段内配对比例 ${paired}，初步结构门通过；但出生节点仍待跨物种 CM 分析，因此只进入候选预筛选。${warning}`;
+    return `段内配对比例 ${paired}，结构预筛选通过；当前按已知同一 ES、以人为锚点纳入保守性与结构低熵评分。跨物种 CM 仅用于未来推断该 ES 的起源时间，不影响本轮评分。${warning}`;
   }
 
   function scopeAction(record) {
     const scopeClass = scopeClassFor(record);
     if (scopeClass === "unresolved") return "仅展示。先统一坐标轴并冻结结构范围，再决定是否生成窗口。";
     if (scopeClass === "core_hold") return "仅展示，不生成保守性、低熵或候选排名窗口。";
-    return "已有逐 1 nt 保守性窗口可展示；最终排名前需冻结非核心掩膜并补齐 B=500 低熵。";
+    return "已纳入逐 1 nt 窗口评分；完整 B=500 结果进入正式排名，其余窗口随断点续算逐步补齐。";
   }
 
   function renderScopeCurrent() {
@@ -1484,14 +1483,13 @@
     }, { preliminary: 0, core_hold: 0, unresolved: 0 });
     document.getElementById("scopeSummary").innerHTML = `
       <article><span>人源 ES 总数</span><strong>${records.length}</strong><small>全部保留在页面中</small></article>
-      <article class="preliminary"><span>候选预筛选</span><strong>${counts.preliminary}</strong><small>结构门通过，出生节点待验证</small></article>
+      <article class="preliminary"><span>纳入当前评分</span><strong>${counts.preliminary}</strong><small>坐标可用，结构预筛选通过</small></article>
       <article class="core-hold"><span>核心配对风险暂停</span><strong>${counts.core_hold}</strong><small>仅展示，不生成窗口</small></article>
-      <article class="unresolved"><span>坐标或结构未决</span><strong>${counts.unresolved}</strong><small>先完成范围复核</small></article>
-      <article class="birth-pending"><span>出生节点已确认</span><strong>0</strong><small>22 个均待跨物种 CM 分析</small></article>`;
+      <article class="unresolved"><span>坐标或结构未决</span><strong>${counts.unresolved}</strong><small>先完成范围复核</small></article>`;
 
     const filters = [
       ["all", `全部 ${records.length}`],
-      ["preliminary", `预筛选 ${counts.preliminary}`],
+      ["preliminary", `可评分 ${counts.preliminary}`],
       ["core_hold", `核心风险 ${counts.core_hold}`],
       ["unresolved", `定位未决 ${counts.unresolved}`]
     ];

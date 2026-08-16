@@ -7,7 +7,7 @@
   <link rel="canonical" href="https://taarseho-bit.github.io/ESCoMA/">
   <link rel="icon" type="image/svg+xml" href="assets/brand/escoma-mark-app-light.svg?v=brand-v1">
   <title>ESCoMA｜扩增区段保守模块图谱</title>
-  <link rel="stylesheet" href="styles.css?v=escoma-sticky-labels-b62">
+  <link rel="stylesheet" href="styles.css?v=escoma-scoring-scope-b63">
 </head>
 <body>
   <header class="app-header">
@@ -130,23 +130,23 @@
 
     <section id="scopeTab" class="tab-panel scope-tab" hidden>
       <section class="scope-heading">
-        <div><span class="eyebrow">Human ES Reference v1.2 · 评分资格审计</span><h2>22 个 ES 的纳入、暂停与未决依据</h2><p>结构门通过不等于已经证明“进化新增”。当前所有 ES 的出生节点仍待跨物种协方差模型分析，因此下面的 8 个 ES 仅进入候选预筛选。</p></div>
-        <div class="scope-version"><span>严格边界原则</span><strong>先冻结区间，再生成窗口</strong><small>宿主螺旋、核心依赖区和未决区不进入排名</small></div>
+        <div><span class="eyebrow">Human ES Reference v1.2 · 评分资格审计</span><h2>22 个 ES 的纳入、暂停与未决依据</h2><p>当前任务是在已归入同一 ES 的跨物种序列中，以人为锚点寻找局部保守、结构低熵窗口，不重复判定同源关系或 ES 出生节点。下面 8 个坐标与结构范围可用的 ES 纳入当前评分；跨物种 CM 仅作为未来的进化起源分析。</p></div>
+        <div class="scope-version"><span>本轮边界原则</span><strong>使用已核验的人源 ES 全跨度</strong><small>子臂划分与出生节点不作为当前评分前置条件</small></div>
       </section>
 
       <section id="scopeSummary" class="scope-summary" aria-label="ES评分资格统计"></section>
 
       <section class="scope-boundary-explainer">
-        <div><strong>宿主螺旋全跨度</strong><span>结构定义，包含 ES 与连接核糖体核心的根部；用于展示和坐标核对，不能默认整段评分。</span></div>
+        <div><strong>人源 ES 全跨度</strong><span>当前逐 1 nt 窗口的统一坐标范围；边界已通过人源参考序列与唯一锚点核验。</span></div>
         <div><strong>Parker 插入代理</strong><span>偏向演化插入的线性边界；与宿主螺旋跨度是两套定义，错位时必须重新提取和比对。</span></div>
-        <div><strong>最终可评分掩膜</strong><span>还需扣除古老根螺旋、核心依赖配对和未冻结子臂。窗口必须完全落在掩膜内。</span></div>
+        <div><strong>本轮评分范围</strong><span>窗口完整落在人源 ES 全跨度内即可参与当前评分；若未来改用更窄插入代理或子臂边界，必须重新提取序列并重建 MSA。</span></div>
       </section>
 
       <section class="scope-decision-map" aria-label="ES排除与预筛选名单">
         <div class="scope-decision-row preliminary">
-          <strong>仅进入预筛选，尚不能作为最终候选</strong>
+          <strong>纳入当前保守性与结构低熵评分</strong>
           <span class="scope-es-list"><b>ES5L</b><b>ES7L</b><b>ES9L</b><b>ES15L</b><b>ES19L</b><b>ES20L</b><b>ES27L</b><b>ES39L</b></span>
-          <p>段内配对比例达到初步阈值 P<sub>intra</sub> ≥ 0.30，所以允许展示保守性窗口；但 8 个 ES 均未完成跨物种协方差模型出生节点判定，且部分最终非核心掩膜尚未冻结，因此当前只是候选预筛选，不是“已确认进化新增区”。</p>
+          <p>这 8 个 ES 的人源坐标可用，段内配对比例达到结构预筛选阈值 P<sub>intra</sub> ≥ 0.30，因此生成逐 1 nt 保守性窗口，并对完成 B=500 零模型的窗口计算结构低熵与联合评分。这里比较的是同一 ES 内部的局部模块，不把 CM 出生节点判定作为评分前置条件。</p>
         </div>
         <div class="scope-decision-row core-hold">
           <strong>暂停评分：古老宿主螺旋或核心依赖配对风险</strong>
@@ -166,8 +166,8 @@
       </section>
 
       <section class="scope-caveat">
-        <strong>当前必须保留的限制</strong>
-        <p>ES7L、ES15L 和 ES27L 的部分子臂边界尚未冻结；ES9L、ES15L、ES19L、ES20L、ES27L、ES39L 的 Parker 代理区间超出当前宿主跨度缓存的一端，切换为该边界后需要重新提取相应序列并重建 MSA，不能只裁剪旧结果。</p>
+        <strong>边界使用说明</strong>
+        <p>当前评分统一使用已核验的人源 ES 全跨度。ES7L、ES15L 与 ES27L 的历史子臂命名不作为本轮窗口边界，因此不阻塞整段评分；若未来切换为 Parker 插入代理或开展子臂级分析，超出当前缓存的序列必须重新提取并重建 MSA，不能直接改坐标标签复用旧结果。</p>
       </section>
     </section>
 
@@ -272,7 +272,7 @@
           <div><dt>缺失策略</dt><dd>未定位、低覆盖、结构门控失败或零模型未完成的窗口不进入图、排行和导出，不以 0 分替代。</dd></div>
           <div><dt>静态缓存</dt><dd>MAFFT、RNAstructure 5.7 partition-cuda 与 B=500 零模型均在离线脚本中完成；GPU 引擎使用 CUDA 11.8、sm_89 与 float fast-math。GitHub Pages 只下载 JSON，不执行服务端计算。</dd></div>
           <div><dt>引擎版本</dt><dd>当前低熵分数全部来自同一 RNAstructure CUDA 引擎；不可与旧版 ViennaRNA CPU 分数直接混合作为同一量表排序。</dd></div>
-          <div><dt>当前限制</dt><dd>出生节点和核心区掩码仍需逐 ES 人工冻结；当前代表峰属于可审计的候选筛选，不直接证明功能或实验效应。</dd></div>
+          <div><dt>解释边界</dt><dd>当前评分回答“同一 ES 内哪一段更保守且结构更确定”，不回答该 ES 在哪个祖先节点出现。出生节点可在后续用跨物种 CM 单独研究，但不影响本轮窗口排名。</dd></div>
         </dl>
       </section>
     </section>
@@ -287,6 +287,6 @@
     </section>
   </div>
 
-  <script src="app.js?v=escoma-sticky-labels-b62"></script>
+  <script src="app.js?v=escoma-scoring-scope-b63"></script>
 </body>
 </html>
