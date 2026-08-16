@@ -13,7 +13,7 @@
         {"label": "MAFFT E-INS-i", "url": "https://mafft.cbrc.jp/alignment/software/algorithms/algorithms.html"}
       ],
       "provenance": "每条序列保留 species、TaxID、accession、NCBI 原始链接、来源坐标、链方向、MD5、RF02543 覆盖与 bit score；网页物种名可直接打开原始记录。",
-      "use": "EvoES v2.0 目平衡保守性评分与离线代表峰缓存；人源不计分。"
+      "use": "EvoES v2.0 目平衡保守性评分与离线窗口排序缓存；人源不计分。"
     },
     {
       "source_id": "ROD_v1_2", "name": "Ribosomal Operon Database", "version": "v1.2 GoldenRod", "records": 69480,
@@ -48,7 +48,7 @@
         {"label": "CC0 许可", "url": "https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/COPYING"}
       ],
       "provenance": "FASTA、CM、88 条 Seed、146,122 条候选区域及 SHA-256 均已登记。",
-      "use": "结构感知的 LSU 同源定位与深分支序列 QC。"
+      "use": "结构感知的 LSU 坐标映射与深分支序列 QC。"
     },
     {
       "source_id": "Rfam_RF00002", "name": "Rfam 5.8S rRNA", "version": "15.1 / RF00002", "records": 16562,
@@ -60,7 +60,7 @@
         {"label": "Seed 比对", "url": "https://rfam.org/family/RF00002/alignment?gzip=1"}
       ],
       "provenance": "16,562 条 FASTA、61 条 Seed、47,585 条候选区域、SHA-256 已验证。",
-      "use": "ES3L 及 5.8S-28S 复合边界 ES4L 的同源定位原料；尚不代表 ES 边界已完成。"
+      "use": "ES3L 及 5.8S-28S 复合边界 ES4L 的坐标映射原料；尚不代表 ES 边界已完成。"
     },
     {
       "source_id": "NCBI_Nucleotide", "name": "NCBI Nucleotide / RefSeq", "version": "2026-08-13 工作快照", "records": 135,

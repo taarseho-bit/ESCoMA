@@ -343,7 +343,7 @@
 
   async function loadProvenanceCatalog() {
     try {
-      const response = await fetch("data/provenance_catalog.json?v=1.0.0");
+      const response = await fetch("data/provenance_catalog.json?v=1.0.1");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       state.provenanceCatalog = await response.json();
       markStatisticsDirty();
