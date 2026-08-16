@@ -521,7 +521,8 @@
     const allWindows = dataset.summary?.all_window_count ?? dataset.windows?.length ?? 0;
     const completeWindows = dataset.summary?.complete_window_count ?? 0;
     const demoWindows = dataset.summary?.demo_window_count ?? 0;
-    document.getElementById("analysisStatus").textContent = `${allWindows.toLocaleString()} 个 · 正式 ${completeWindows} · 预览 ${demoWindows}`;
+    const conservationOnlyWindows = Math.max(0, allWindows - completeWindows - demoWindows);
+    document.getElementById("analysisStatus").textContent = `${allWindows.toLocaleString()} 个 · 正式 ${completeWindows} · 预览 ${demoWindows}${conservationOnlyWindows ? ` · 仅保守 ${conservationOnlyWindows}` : ""}`;
     document.getElementById("entropyMethod").innerHTML = '<i class="method-symbol coverage"></i>低熵：二核苷酸零模型';
     document.getElementById("dataNotice").textContent = `${dataset.summary?.scoring_species ?? sequences.length - 1}种非人哺乳动物参与评分`;
     const metric = state.rankMetric === "auto" ? (state.results.some(item => Number.isFinite(item.jointScore)) ? "联合分数" : "保守性") : ({ conservation: "保守性", low_entropy: "结构低熵", joint: "联合分数" }[state.rankMetric]);
@@ -1308,7 +1309,7 @@
       const scope = inventoryScope(record);
       const scoring = scope === "mammal";
       const statusClass = scoring ? "scoring" : "display-only";
-      const statusLabel = scoring ? "参与 ES 评分" : "仅展示";
+      const statusLabel = scoring ? "评分候选" : "仅展示";
       return `<tr>
         <td><strong>${escapeHtml(record.species)}</strong><small>TaxID ${record.taxid ?? "未提供"}</small></td>
         <td>${escapeHtml(record.major_clade)}</td>
@@ -1332,16 +1333,16 @@
   }
 
   function renderDatabaseLayers(summary) {
-    const lsuPass = state.librarySummary?.combined_fasta_records ?? 79;
     const totalWindows = Number(state.allWindowsManifest?.total_windows ?? 0);
     const formalWindows = Number(state.allWindowsManifest?.complete_low_entropy_windows ?? 0);
     const previewWindows = Number(state.allWindowsManifest?.demo_low_entropy_windows ?? 0);
+    const conservationOnlyWindows = Math.max(0, totalWindows - formalWindows - previewWindows);
     const layers = [
       { value: totalWindows.toLocaleString(), label: "滑动窗口", context: "8个 ES · 1 nt 步长" },
       { value: `${formalWindows.toLocaleString()}/${totalWindows.toLocaleString()}`, label: "正式 B=500", context: "已完成结构低熵" },
       { value: previewWindows.toLocaleString(), label: "预览结果", context: "显示实际 B 值" },
+      { value: conservationOnlyWindows.toLocaleString(), label: "仅保守性", context: "尚无结构低熵分数" },
       { value: summary.mammal_species_count, label: "已定位哺乳动物", context: `${summary.es_species_calls} 条 ES 序列` },
-      { value: lsuPass, label: "已核验原始 LSU", context: "用于来源追溯" },
       { value: summary.human_reference_es_count, label: "人源 ES 参考", context: `${summary.directly_mapped_28s_es_count} 个纳入评分` }
     ];
     document.getElementById("databaseLayerStats").innerHTML = layers.map(item => `
