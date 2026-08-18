@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
-  <title id="title">ESCoMA 多序列对齐标志</title>
+  <title id="title">ESCoSA 多序列对齐标志</title>
   <desc id="desc">多条高度不同的序列轨道穿过同一保守窗口，突出跨物种对齐中的局部保守峰。</desc>
   <rect x="1" y="1" width="46" height="46" rx="7" fill="#EDF3F5" stroke="#D2DDE1"/>
   <rect x="9" y="8" width="4" height="32" rx="2" fill="#0065A8"/>

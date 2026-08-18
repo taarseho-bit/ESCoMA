@@ -1,4 +1,4 @@
-name: Deploy ESCoMA to GitHub Pages
+name: Deploy ESCoSA to GitHub Pages
 
 on:
   push:

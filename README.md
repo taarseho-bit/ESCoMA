@@ -1,6 +1,6 @@
-# ESCoMA
+# ESCoSA
 
-ESCoMA (Expansion Segment Conserved Module Atlas; 扩增区段保守模块图谱) is a
+ESCoSA (Expansion Segment Conserved-Sequence Atlas; 扩增区段保守序列图谱) is a
 static research interface for inspecting traceable mammalian LSU
 alignments and complete, offline-computed EvoES candidate scores. GitHub Pages
 only downloads frozen JSON; MAFFT, RNAstructure CUDA, and random-null calculations never
